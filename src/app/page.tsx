@@ -18,10 +18,45 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Page() {
   const studyEntries = useStudyStore((state) => state.studyEntries);
   const mockExams = useStudyStore((state) => state.mockExams);
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.push("/auth/login");
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    checkUser();
+  }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">
+            Yükleniyor...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 dark:bg-slate-950 sm:px-8">

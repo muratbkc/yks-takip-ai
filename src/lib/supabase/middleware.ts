@@ -30,20 +30,7 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Session'ı yenile (önemli!)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Giriş yapılmamışsa login'e yönlendir (auth sayfaları hariç)
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/_next")
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
-  }
+  await supabase.auth.getUser();
 
   return supabaseResponse;
 }
