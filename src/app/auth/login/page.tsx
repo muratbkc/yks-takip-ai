@@ -40,7 +40,7 @@ export default function LoginPage() {
             YKS Takip AI
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            2026 YKS'ye hazırlık sürecinizi takip edin
+            2026 YKS&apos;ye hazırlık sürecinizi takip edin
           </p>
         </div>
 

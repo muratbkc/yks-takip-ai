@@ -15,7 +15,6 @@ import {
   XAxis,
   YAxis,
   Legend,
-  Line,
 } from "recharts";
 
 interface TimeSeriesCardProps {
