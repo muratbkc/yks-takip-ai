@@ -1,0 +1,58 @@
+{
+  "name": "yks_takipai",
+  "version": "2.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "YKS",
+    "TYT",
+    "AYT",
+    "YDT",
+    "2026",
+    "takip",
+    "öğrenci-analitiği",
+    "sınav-hazırlık"
+  ],
+  "author": "YKS Takip AI",
+  "license": "MIT",
+  "description": "2026 YKS (TYT, AYT, YDT) hazırlık sürecini günlük olarak takip eden, hedef yöneten ve görselleştiren modern Next.js 15 uygulaması. Supabase ile bulut tabanlı veri saklama, kullanıcı girişi ve çoklu cihaz senkronizasyonu. Tüm dersler ve soru sayıları 2026 YKS yapısına göre optimize edilmiştir.",
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.81.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
+    "lucide-react": "^0.553.0",
+    "next": "^15.5.6",
+    "next-themes": "^0.4.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-hook-form": "^7.66.0",
+    "recharts": "^3.4.1",
+    "zod": "^4.1.12",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.4",
+    "autoprefixer": "^10.4.22",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "^16.0.3",
+    "postcss": "^8.5.6",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.9.3"
+  }
+}
