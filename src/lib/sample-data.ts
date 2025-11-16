@@ -430,14 +430,6 @@ export const initialWidgets: WidgetConfig[] = [
     description: "Günlük ve haftalık süre akışı",
     component: "timeSeries",
     visible: true,
-    size: "lg",
-  },
-  {
-    id: "question-efficiency",
-    title: "Verimlilik",
-    description: "Soru / dakika grafiği",
-    component: "efficiency",
-    visible: true,
     size: "md",
   },
   {
@@ -449,20 +441,12 @@ export const initialWidgets: WidgetConfig[] = [
     size: "md",
   },
   {
-    id: "goal-progress",
-    title: "Hedef Durumu",
-    description: "Günlük / haftalık hedef barları",
-    component: "goalTracker",
-    visible: true,
-    size: "md",
-  },
-  {
     id: "deneme-performance",
-    title: "Net Gelişimi",
+    title: "Deneme Net Gelişimi",
     description: "TYT & AYT net trendi",
     component: "mockPerformance",
     visible: true,
-    size: "lg",
+    size: "md",
   },
   {
     id: "plan-suggestion",

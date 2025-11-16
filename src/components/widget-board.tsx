@@ -23,13 +23,20 @@ import {
 import { useStudyStore } from "@/store/use-study-store";
 import type { MockExam, StudyEntry, WidgetConfig, WidgetSize } from "@/types";
 import { TimeSeriesCard } from "./charts/time-series-card";
-import { EfficiencyCard } from "./charts/efficiency-card";
 import { LessonRadarCard } from "./charts/radar-distribution-card";
-import { GoalTracker } from "./goal-tracker";
 import { NetTrendCard } from "./charts/net-trend-card";
 import { PlanSuggestion } from "./plan-suggestion";
-import { BadgeCheck, Ruler, Palette } from "lucide-react";
+import { BadgeCheck, Ruler, Palette, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { chartInfo } from "@/lib/chart-info";
 
 interface WidgetBoardProps {
   entries: StudyEntry[];
@@ -41,9 +48,7 @@ const componentMap = (
   exams: MockExam[],
 ): Record<string, ReactNode> => ({
   timeSeries: <TimeSeriesCard entries={entries} />,
-  efficiency: <EfficiencyCard entries={entries} />,
   lessonRadar: <LessonRadarCard entries={entries} />,
-  goalTracker: <GoalTracker />,
   mockPerformance: <NetTrendCard exams={exams} />,
   planSuggestion: <PlanSuggestion />,
 });
@@ -112,11 +117,36 @@ function WidgetFrame({
   children: ReactNode;
   onSizeChange: (size: WidgetSize) => void;
 }) {
+  const info =
+    chartInfo[widget.component as keyof typeof chartInfo] || null;
+
   return (
     <div className="relative flex h-full flex-col rounded-[32px] border border-white/10 bg-emerald-900/50 p-4 text-white shadow-[0_20px_45px_rgba(4,12,9,0.45)] backdrop-blur">
       <div className="pointer-events-none absolute inset-0 rounded-[32px] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),_transparent_60%)]" />
       <div className="relative z-10 mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.35em] text-emerald-100">
-        <span>{widget.title}</span>
+        <div className="flex items-center gap-2">
+          <span>{widget.title}</span>
+          {info && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="text-white/50 transition hover:text-white"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="text-slate-900 dark:text-slate-50">
+                <DialogHeader>
+                  <DialogTitle>{info.title}</DialogTitle>
+                  <DialogDescription className="text-slate-600 dark:text-slate-400">
+                    {info.description}
+                  </DialogDescription>
+                </DialogHeader>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
         <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-1 py-0.5 text-[10px] font-bold text-white">
           {sizeOptions.map((option) => (
             <button

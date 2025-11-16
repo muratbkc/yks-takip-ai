@@ -13,6 +13,7 @@ import type {
   Goal,
   MockExam,
   NotificationItem,
+  StudentProfile,
   StudyEntry,
   TopicProgress,
   WidgetConfig,
@@ -20,6 +21,15 @@ import type {
 } from "@/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+
+const mapProfileRow = (row: any): StudentProfile => ({
+  id: row.id,
+  email: row.email,
+  fullName: row.full_name,
+  targetExam: row.target_exam,
+  studyField: row.study_field,
+  updatedAt: row.updated_at,
+});
 
 export interface StudyState {
   studyEntries: StudyEntry[];
@@ -30,9 +40,15 @@ export interface StudyState {
   widgets: WidgetConfig[];
   isInitialized: boolean;
   userId: string | null;
+  profile: StudentProfile | null;
   
   // Actions
   setUserId: (userId: string | null) => void;
+  fetchProfile: () => Promise<void>;
+  updateProfile: (payload: {
+    fullName?: string;
+    studyField?: StudentProfile["studyField"];
+  }) => Promise<void>;
   initializeFromSupabase: () => Promise<void>;
   addStudyEntry: (entry: StudyEntry) => Promise<void>;
   addMockExam: (exam: MockExam) => Promise<void>;
@@ -56,8 +72,75 @@ export const useStudyStore = create<StudyState>()(
       widgets: initialWidgets,
       isInitialized: false,
       userId: null,
+      profile: null,
 
-      setUserId: (userId) => set({ userId }),
+      setUserId: (userId) =>
+        set((state) => ({
+          userId,
+          isInitialized:
+            userId && state.userId === userId ? state.isInitialized : false,
+          profile: userId && state.userId === userId ? state.profile : null,
+        })),
+
+      fetchProfile: async () => {
+        const { userId } = get();
+        if (!userId) return;
+
+        const supabase = createClient();
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select(
+              "id, email, full_name, target_exam, study_field, updated_at",
+            )
+            .eq("id", userId)
+            .maybeSingle();
+
+          if (error) throw error;
+          set({ profile: data ? mapProfileRow(data) : null });
+        } catch (error) {
+          console.error("Profil bilgisi alınamadı:", error);
+        }
+      },
+
+      updateProfile: async ({ fullName, studyField }) => {
+        const { userId, profile } = get();
+        if (!userId) return;
+
+        const supabase = createClient();
+        const targetExamMap: Record<string, string> = {
+          sayisal: "AYT-SAY",
+          "esit-agirlik": "AYT-EA",
+          sozel: "AYT-SOZ",
+        };
+
+        const updates = {
+          full_name: fullName ?? profile?.fullName ?? null,
+          study_field: studyField ?? profile?.studyField ?? null,
+          target_exam:
+            (studyField ? targetExamMap[studyField] : profile?.targetExam) ??
+            null,
+        };
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .update(updates)
+          .eq("id", userId)
+          .select(
+            "id, email, full_name, target_exam, study_field, updated_at",
+          )
+          .single();
+
+        if (error) {
+          console.error(
+            "Profil güncellenemedi:",
+            JSON.stringify(error, null, 2),
+          );
+          throw error;
+        }
+
+        set({ profile: mapProfileRow(data) });
+      },
 
       initializeFromSupabase: async () => {
         const { userId, isInitialized } = get();
@@ -69,11 +152,12 @@ export const useStudyStore = create<StudyState>()(
           // Tüm verileri paralel olarak çek
           const [
             { data: studyEntries },
-            { data: mockExams },
+            { data: mockExamsRaw },
             { data: goals },
             { data: topics },
             { data: notifications },
             { data: widgets },
+            { data: profileRow },
           ] = await Promise.all([
             supabase
               .from("study_entries")
@@ -93,12 +177,46 @@ export const useStudyStore = create<StudyState>()(
               .order("created_at", { ascending: false })
               .limit(50),
             supabase.from("widget_configs").select("*").order("display_order"),
+            supabase
+              .from("profiles")
+              .select(
+                "id, email, full_name, target_exam, study_field, updated_at",
+              )
+              .eq("id", userId)
+              .maybeSingle(),
           ]);
+
+          // Mock exam details'i ayrı çek ve birleştir
+          const mockExams = await Promise.all(
+            (mockExamsRaw || []).map(async (exam) => {
+              const { data: details } = await supabase
+                .from("mock_exam_details")
+                .select("*")
+                .eq("exam_id", exam.id);
+
+              return {
+                id: exam.id,
+                title: exam.title,
+                date: exam.date.split('T')[0], // Tarihi normalize et: YYYY-MM-DD
+                examType: exam.exam_type,
+                duration: exam.duration,
+                difficulty: exam.difficulty,
+                summary: details?.map((d) => ({
+                  lesson: d.lesson,
+                  correct: d.correct,
+                  wrong: d.wrong,
+                  empty: d.empty,
+                  net: d.net,
+                })) || [],
+                weakTopics: exam.weak_topics,
+              };
+            })
+          );
 
           set({
             studyEntries: studyEntries?.map((entry) => ({
               id: entry.id,
-              date: entry.date,
+              date: entry.date.split('T')[0], // Tarihi normalize et: YYYY-MM-DD
               lesson: entry.lesson,
               subTopic: entry.sub_topic,
               minutes: entry.minutes,
@@ -111,15 +229,7 @@ export const useStudyStore = create<StudyState>()(
                 ayt: entry.ayt_net,
               },
             })) || [],
-            mockExams: mockExams?.map((exam) => ({
-              id: exam.id,
-              title: exam.title,
-              date: exam.date,
-              duration: exam.duration,
-              difficulty: exam.difficulty,
-              summary: exam.summary,
-              weakTopics: exam.weak_topics,
-            })) || [],
+            mockExams: mockExams || [],
             goals: goals?.map((goal) => ({
               id: goal.id,
               title: goal.title,
@@ -151,6 +261,7 @@ export const useStudyStore = create<StudyState>()(
               visible: widget.visible,
               size: widget.size,
             })) || initialWidgets,
+            profile: profileRow ? mapProfileRow(profileRow) : null,
             isInitialized: true,
           });
         } catch (error) {
@@ -191,20 +302,48 @@ export const useStudyStore = create<StudyState>()(
         if (!userId) return;
 
         const supabase = createClient();
-        
-        const { error } = await supabase.from("mock_exams").insert({
-          user_id: userId,
-          title: exam.title,
-          date: exam.date,
-          duration: exam.duration,
-          difficulty: exam.difficulty,
-          summary: exam.summary,
-          weak_topics: exam.weakTopics,
-        });
 
-        if (!error) {
+        // 1. Ana deneme kaydını 'mock_exams' tablosuna ekle (summary olmadan)
+        const { data: newExam, error: examError } = await supabase
+          .from("mock_exams")
+          .insert({
+            user_id: userId,
+            title: exam.title,
+            date: exam.date,
+            exam_type: exam.examType,
+            duration: exam.duration,
+            difficulty: exam.difficulty,
+          })
+          .select()
+          .single();
+
+        if (examError) {
+          console.error("Deneme ana kaydı oluşturulamadı:", examError);
+          return;
+        }
+
+        if (!newExam) return;
+
+        // 2. Her bir ders sonucunu 'mock_exam_details' tablosuna ekle
+        const summaryWithExamId = exam.summary.map(detail => ({
+            exam_id: newExam.id,
+            ...detail
+        }));
+
+        const { error: detailsError } = await supabase
+          .from("mock_exam_details")
+          .insert(summaryWithExamId);
+
+        if (detailsError) {
+          console.error("Deneme detayları kaydedilemedi:", detailsError);
+          // İsteğe bağlı: Burada ana deneme kaydını silerek işlemi geri alabiliriz.
+          return;
+        }
+
+        // 3. Lokal state'i güncelle
+        if (!examError && !detailsError) {
           set((state) => ({
-            mockExams: [exam, ...state.mockExams].slice(0, 30),
+            mockExams: [{ ...exam, id: newExam.id }, ...state.mockExams].slice(0, 30),
           }));
         }
       },
@@ -338,6 +477,7 @@ export const useStudyStore = create<StudyState>()(
         goals: state.goals,
         topics: state.topics,
         widgets: state.widgets,
+        profile: state.profile,
         userId: state.userId,
       }),
     }

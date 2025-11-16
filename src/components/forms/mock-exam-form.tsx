@@ -4,9 +4,14 @@ import { useStudyStore } from "@/store/use-study-store";
 import type { Difficulty, LessonType } from "@/types";
 import { getMaxQuestionCount } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MinusCircle, PlusCircle } from "lucide-react";
+import { MinusCircle, PlusCircle, ArrowLeft } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
+import {
+  getDefaultLessonForField,
+  getLessonGroupsForField,
+} from "@/lib/lesson-catalog";
 
 const difficultyLabels: Record<Difficulty, string> = {
   kolay: "Kolay",
@@ -41,47 +46,40 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-// 2026 YKS Ders Listesi - Kategorize ve Sıralı
-const lessonsByCategory: Record<string, LessonType[]> = {
-  "TYT Dersleri": [
-    "Türkçe",
-    "Matematik",
-    "Geometri",
-    "Fizik",
-    "Kimya",
-    "Biyoloji",
-    "Tarih",
-    "Coğrafya",
-    "Felsefe",
-    "Din Kültürü",
-  ],
-  "AYT - Sayısal": [
-    "AYT Matematik",
-    "AYT Fizik",
-    "AYT Kimya",
-    "AYT Biyoloji",
-  ],
-  "AYT - Sözel/EA": [
-    "AYT Edebiyat",
-    "AYT Tarih-1",
-    "AYT Tarih-2",
-    "AYT Coğrafya-1",
-    "AYT Coğrafya-2",
-    "AYT Felsefe",
-    "AYT Din Kültürü",
-    "AYT Psikoloji",
-    "AYT Sosyoloji",
-    "AYT Mantık",
-  ],
-};
-
 const createId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
 
-export function MockExamForm() {
+interface MockExamFormProps {
+  onSwitchToDailyLog: () => void;
+}
+
+export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
   const addMockExam = useStudyStore((state) => state.addMockExam);
+  const profile = useStudyStore((state) => state.profile);
+
+  const lessonGroups = useMemo(
+    () => getLessonGroupsForField(profile?.studyField),
+    [profile?.studyField],
+  );
+
+  const defaultLesson = useMemo(
+    () => getDefaultLessonForField(profile?.studyField),
+    [profile?.studyField],
+  );
+
+  const defaultValues = useMemo<FormValues>(
+    () => ({
+      title: "Yeni Deneme",
+      date: new Date().toISOString().split("T")[0],
+      duration: 135,
+      difficulty: "orta",
+      summary: [{ lesson: defaultLesson, net: 30 }],
+      weakTopics: "",
+    }),
+    [defaultLesson],
+  );
   const {
     control,
     register,
@@ -90,15 +88,12 @@ export function MockExamForm() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      title: "Yeni Deneme",
-      date: new Date().toISOString().split("T")[0],
-      duration: 135,
-      difficulty: "orta",
-      summary: [{ lesson: "Türkçe", net: 30 }],
-      weakTopics: "",
-    },
+    defaultValues,
   });
+
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -121,16 +116,26 @@ export function MockExamForm() {
   return (
     <div className="glass rounded-3xl p-6">
       <div className="flex items-center justify-between pb-4">
-        <div>
-          <p className="text-sm text-slate-500">Deneme Analizi</p>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-            Netlerini kaydet
-          </h2>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onSwitchToDailyLog}
+            className="rounded-full bg-slate-200 p-2 text-slate-600 transition hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Deneme Analizi
+            </p>
+            <h2 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              Netlerini kaydet
+            </h2>
+          </div>
         </div>
         <button
           type="button"
-          onClick={() => append({ lesson: "Türkçe", net: 0 })}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-sm text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
+          onClick={() => append({ lesson: defaultLesson, net: 0 })}
+          className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
         >
           <PlusCircle className="h-4 w-4" /> Ders ekle
         </button>
@@ -204,9 +209,9 @@ export function MockExamForm() {
                   className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900"
                   {...register(`summary.${index}.lesson` as const)}
                 >
-                  {Object.entries(lessonsByCategory).map(([category, lessons]) => (
-                    <optgroup key={category} label={category}>
-                      {lessons.map((lesson) => (
+                  {lessonGroups.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.lessons.map((lesson) => (
                         <option key={lesson} value={lesson}>
                           {lesson}
                         </option>

@@ -79,16 +79,23 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
           <ComposedChart data={dailySeries}>
             <defs>
               <linearGradient id="minutes" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.6} />
+                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.1} />
-            <XAxis dataKey="date" tickLine={false} axisLine={false} tickFormatter={(value) => formatDate(value)} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} />
+            <XAxis 
+              dataKey="date" 
+              tickLine={false} 
+              axisLine={false}
+              tick={{ fill: '#64748b' }}
+              tickFormatter={(value) => formatDate(value)} 
+            />
             <YAxis
               yAxisId="left"
               tickLine={false}
               axisLine={false}
+              tick={{ fill: '#6366f1' }}
               stroke="#6366f1"
             />
             <YAxis
@@ -96,14 +103,16 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
               orientation="right"
               tickLine={false}
               axisLine={false}
+              tick={{ fill: '#f97316' }}
               stroke="#f97316"
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "rgba(255, 255, 255, 0.8)",
-                backdropFilter: "blur(4px)",
-                borderRadius: "1rem",
-                border: "1px solid rgba(200, 200, 200, 0.5)",
+                backgroundColor: "rgba(15, 23, 42, 0.95)",
+                backdropFilter: "blur(12px)",
+                borderRadius: "0.75rem",
+                border: "1px solid rgba(148, 163, 184, 0.2)",
+                color: "#f1f5f9",
               }}
               labelFormatter={(label: string) => {
                 if (!label.includes("-")) return label;
@@ -120,13 +129,15 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
             <ReferenceLine
               yAxisId="left"
               y={MINUTES_TARGET}
-              stroke="#94a3b8"
-              strokeDasharray="4 4"
+              stroke="#10b981"
+              strokeDasharray="5 5"
+              strokeWidth={2}
               label={{
                 value: "Hedef 300 dk",
                 position: "insideTopRight",
-                fill: "#94a3b8",
-                fontSize: 10,
+                fill: "#10b981",
+                fontSize: 11,
+                fontWeight: 600,
               }}
             />
             <Area
@@ -134,9 +145,9 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
               type="monotone"
               dataKey="minutes"
               name="Dakika"
-              stroke="#6366f1"
+              stroke="#8b5cf6"
               fill="url(#minutes)"
-              strokeWidth={2}
+              strokeWidth={3}
             />
             <Bar
               yAxisId="right"
@@ -144,8 +155,8 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
               name="Soru Sayısı"
               barSize={14}
               radius={[6, 6, 0, 0]}
-              fill="#f97316"
-              opacity={0.6}
+              fill="#f59e0b"
+              opacity={0.8}
             />
           </ComposedChart>
         </ResponsiveContainer>

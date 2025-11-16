@@ -116,112 +116,138 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.widget_configs ENABLE ROW LEVEL SECURITY;
 
 -- Profiles politikaları
+DROP POLICY IF EXISTS "Kullanıcılar kendi profillerini görebilir" ON public.profiles;
 CREATE POLICY "Kullanıcılar kendi profillerini görebilir" 
     ON public.profiles FOR SELECT 
     USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi profillerini güncelleyebilir" ON public.profiles;
 CREATE POLICY "Kullanıcılar kendi profillerini güncelleyebilir" 
     ON public.profiles FOR UPDATE 
     USING (auth.uid() = id);
 
 -- Study entries politikaları
+DROP POLICY IF EXISTS "Kullanıcılar kendi kayıtlarını görebilir" ON public.study_entries;
 CREATE POLICY "Kullanıcılar kendi kayıtlarını görebilir" 
     ON public.study_entries FOR SELECT 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi kayıtlarını ekleyebilir" ON public.study_entries;
 CREATE POLICY "Kullanıcılar kendi kayıtlarını ekleyebilir" 
     ON public.study_entries FOR INSERT 
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi kayıtlarını güncelleyebilir" ON public.study_entries;
 CREATE POLICY "Kullanıcılar kendi kayıtlarını güncelleyebilir" 
     ON public.study_entries FOR UPDATE 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi kayıtlarını silebilir" ON public.study_entries;
 CREATE POLICY "Kullanıcılar kendi kayıtlarını silebilir" 
     ON public.study_entries FOR DELETE 
     USING (auth.uid() = user_id);
 
 -- Mock exams politikaları
+DROP POLICY IF EXISTS "Kullanıcılar kendi denemelerini görebilir" ON public.mock_exams;
 CREATE POLICY "Kullanıcılar kendi denemelerini görebilir" 
     ON public.mock_exams FOR SELECT 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi denemelerini ekleyebilir" ON public.mock_exams;
 CREATE POLICY "Kullanıcılar kendi denemelerini ekleyebilir" 
     ON public.mock_exams FOR INSERT 
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi denemelerini güncelleyebilir" ON public.mock_exams;
 CREATE POLICY "Kullanıcılar kendi denemelerini güncelleyebilir" 
     ON public.mock_exams FOR UPDATE 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi denemelerini silebilir" ON public.mock_exams;
 CREATE POLICY "Kullanıcılar kendi denemelerini silebilir" 
     ON public.mock_exams FOR DELETE 
     USING (auth.uid() = user_id);
 
 -- Goals politikaları
+DROP POLICY IF EXISTS "Kullanıcılar kendi hedeflerini görebilir" ON public.goals;
 CREATE POLICY "Kullanıcılar kendi hedeflerini görebilir" 
     ON public.goals FOR SELECT 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi hedeflerini ekleyebilir" ON public.goals;
 CREATE POLICY "Kullanıcılar kendi hedeflerini ekleyebilir" 
     ON public.goals FOR INSERT 
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi hedeflerini güncelleyebilir" ON public.goals;
 CREATE POLICY "Kullanıcılar kendi hedeflerini güncelleyebilir" 
     ON public.goals FOR UPDATE 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi hedeflerini silebilir" ON public.goals;
 CREATE POLICY "Kullanıcılar kendi hedeflerini silebilir" 
     ON public.goals FOR DELETE 
     USING (auth.uid() = user_id);
 
 -- Topic progress politikaları
+DROP POLICY IF EXISTS "Kullanıcılar kendi konu ilerlemelerini görebilir" ON public.topic_progress;
 CREATE POLICY "Kullanıcılar kendi konu ilerlemelerini görebilir" 
     ON public.topic_progress FOR SELECT 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi konu ilerlemelerini ekleyebilir" ON public.topic_progress;
 CREATE POLICY "Kullanıcılar kendi konu ilerlemelerini ekleyebilir" 
     ON public.topic_progress FOR INSERT 
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi konu ilerlemelerini güncelleyebilir" ON public.topic_progress;
 CREATE POLICY "Kullanıcılar kendi konu ilerlemelerini güncelleyebilir" 
     ON public.topic_progress FOR UPDATE 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi konu ilerlemelerini silebilir" ON public.topic_progress;
 CREATE POLICY "Kullanıcılar kendi konu ilerlemelerini silebilir" 
     ON public.topic_progress FOR DELETE 
     USING (auth.uid() = user_id);
 
 -- Notifications politikaları
+DROP POLICY IF EXISTS "Kullanıcılar kendi bildirimlerini görebilir" ON public.notifications;
 CREATE POLICY "Kullanıcılar kendi bildirimlerini görebilir" 
     ON public.notifications FOR SELECT 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi bildirimlerini ekleyebilir" ON public.notifications;
 CREATE POLICY "Kullanıcılar kendi bildirimlerini ekleyebilir" 
     ON public.notifications FOR INSERT 
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi bildirimlerini güncelleyebilir" ON public.notifications;
 CREATE POLICY "Kullanıcılar kendi bildirimlerini güncelleyebilir" 
     ON public.notifications FOR UPDATE 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi bildirimlerini silebilir" ON public.notifications;
 CREATE POLICY "Kullanıcılar kendi bildirimlerini silebilir" 
     ON public.notifications FOR DELETE 
     USING (auth.uid() = user_id);
 
 -- Widget configs politikaları
+DROP POLICY IF EXISTS "Kullanıcılar kendi widget ayarlarını görebilir" ON public.widget_configs;
 CREATE POLICY "Kullanıcılar kendi widget ayarlarını görebilir" 
     ON public.widget_configs FOR SELECT 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi widget ayarlarını ekleyebilir" ON public.widget_configs;
 CREATE POLICY "Kullanıcılar kendi widget ayarlarını ekleyebilir" 
     ON public.widget_configs FOR INSERT 
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi widget ayarlarını güncelleyebilir" ON public.widget_configs;
 CREATE POLICY "Kullanıcılar kendi widget ayarlarını güncelleyebilir" 
     ON public.widget_configs FOR UPDATE 
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Kullanıcılar kendi widget ayarlarını silebilir" ON public.widget_configs;
 CREATE POLICY "Kullanıcılar kendi widget ayarlarını silebilir" 
     ON public.widget_configs FOR DELETE 
     USING (auth.uid() = user_id);
@@ -252,21 +278,27 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Updated_at trigger'ları
+DROP TRIGGER IF EXISTS set_updated_at ON public.profiles;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.profiles
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.study_entries;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.study_entries
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.mock_exams;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.mock_exams
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.goals;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.goals
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.topic_progress;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.topic_progress
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.widget_configs;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.widget_configs
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 

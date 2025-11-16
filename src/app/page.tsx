@@ -12,6 +12,9 @@ import { TopicTracker } from "@/components/topic-tracker";
 import { GamificationBadges } from "@/components/gamification-badges";
 import { PomodoroTimer } from "@/components/pomodoro-timer";
 import { WeeklyReportCard } from "@/components/weekly-report-card";
+import { ProfileSetupGate } from "@/components/profile/profile-setup-gate";
+import { StudentProfileForm } from "@/components/profile/student-profile-form";
+import { DataHistoryTable } from "@/components/data-history-table";
 import {
   Tabs,
   TabsContent,
@@ -25,8 +28,11 @@ import { useEffect, useState } from "react";
 export default function Page() {
   const studyEntries = useStudyStore((state) => state.studyEntries);
   const mockExams = useStudyStore((state) => state.mockExams);
+  const profile = useStudyStore((state) => state.profile);
+  const isInitialized = useStudyStore((state) => state.isInitialized);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [activeForm, setActiveForm] = useState<"daily" | "mock">("daily");
 
   useEffect(() => {
     const checkUser = async () => {
@@ -45,7 +51,7 @@ export default function Page() {
     checkUser();
   }, [router]);
 
-  if (isLoading) {
+  if (isLoading || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
@@ -56,6 +62,10 @@ export default function Page() {
         </div>
       </div>
     );
+  }
+
+  if (!profile?.studyField) {
+    return <ProfileSetupGate />;
   }
 
   return (
@@ -81,21 +91,39 @@ export default function Page() {
             </div>
           </TabsContent>
           <TabsContent value="entry">
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="mt-6 grid grid-cols-1 place-items-center gap-6">
+              <div className="w-full max-w-3xl">
               <DailyLogForm />
-              <MockExamForm />
+              </div>
             </div>
           </TabsContent>
           <TabsContent value="tools">
             <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <DataHistoryTable />
               <PomodoroTimer />
               <TopicTracker />
               <WeeklyReportCard />
             </div>
           </TabsContent>
           <TabsContent value="profile">
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <GamificationBadges />
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <div className="space-y-6 lg:col-span-2">
+                <div className="glass rounded-3xl p-6">
+                  <div className="pb-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Öğrenci Profili
+                    </p>
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">
+                      Alanını istediğin zaman güncelle
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Ders listeleri ve öneriler seçtiğin alana göre filtrelenir.
+                    </p>
+                  </div>
+                  <StudentProfileForm />
+                </div>
+                <GamificationBadges />
+              </div>
               <NotificationCenter />
             </div>
           </TabsContent>

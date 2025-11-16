@@ -10,13 +10,37 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { useState, useMemo } from "react";
+import { subDays } from "date-fns";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LessonRadarProps {
   entries: StudyEntry[];
 }
 
+type TimeFilter = "week" | "month" | "all";
+
 export function LessonRadarCard({ entries }: LessonRadarProps) {
-  const distribution = getLessonDistribution(entries);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+
+  // Zamana göre filtrele
+  const filteredEntries = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (timeFilter === "week") {
+      const weekAgo = subDays(new Date(), 7).toISOString().split('T')[0];
+      return entries.filter(e => e.date >= weekAgo && e.date <= today);
+    }
+    
+    if (timeFilter === "month") {
+      const monthAgo = subDays(new Date(), 30).toISOString().split('T')[0];
+      return entries.filter(e => e.date >= monthAgo && e.date <= today);
+    }
+    
+    return entries; // all
+  }, [entries, timeFilter]);
+
+  const distribution = getLessonDistribution(filteredEntries);
   const topLessons = distribution
     .slice()
     .sort((a, b) => b.minutes - a.minutes)
@@ -37,29 +61,51 @@ export function LessonRadarCard({ entries }: LessonRadarProps) {
             Süre & soru radar grafiği
           </h3>
         </div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-          {distribution.length} ders
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+            {distribution.length} ders
+          </span>
+          <Tabs value={timeFilter} onValueChange={(value) => setTimeFilter(value as TimeFilter)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="week" className="text-xs px-2 py-1">Haftalık</TabsTrigger>
+              <TabsTrigger value="month" className="text-xs px-2 py-1">Aylık</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs px-2 py-1">Tüm Zamanlar</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
       <div className="h-64">
         <ResponsiveContainer>
           <RadarChart data={distribution}>
-            <PolarGrid />
-            <PolarAngleAxis dataKey="lesson" />
-            <Tooltip />
+            <PolarGrid stroke="#64748b" strokeOpacity={0.3} />
+            <PolarAngleAxis 
+              dataKey="lesson" 
+              tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "rgba(15, 23, 42, 0.95)",
+                backdropFilter: "blur(12px)",
+                borderRadius: "0.75rem",
+                border: "1px solid rgba(148, 163, 184, 0.2)",
+                color: "#f1f5f9",
+              }}
+            />
             <Radar
               name="Dakika"
               dataKey="minutes"
-              stroke="#3b82f6"
-              fill="#93c5fd"
-              fillOpacity={0.4}
+              stroke="#8b5cf6"
+              fill="#a78bfa"
+              fillOpacity={0.5}
+              strokeWidth={2}
             />
             <Radar
               name="Soru"
               dataKey="questions"
-              stroke="#f97316"
-              fill="#fdba74"
-              fillOpacity={0.3}
+              stroke="#f59e0b"
+              fill="#fbbf24"
+              fillOpacity={0.4}
+              strokeWidth={2}
             />
           </RadarChart>
         </ResponsiveContainer>

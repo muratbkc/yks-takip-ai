@@ -9,15 +9,11 @@ import { useMemo } from "react";
 
 export function WeeklyReportCard() {
   const studyEntries = useStudyStore((state) => state.studyEntries);
-  const goals = useStudyStore((state) => state.goals);
 
   const weeklyTotals = useMemo(() => getWeeklyTotals(studyEntries), [studyEntries]);
 
   const downloadPdf = () => {
     const doc = new jsPDF();
-    const docWithTables = doc as jsPDF & {
-      lastAutoTable?: { finalY: number };
-    };
     doc.text("YKS Takip AI - Haftalık Rapor", 14, 14);
     autoTable(doc, {
       head: [["Gün", "Dakika", "Soru"]],
@@ -26,16 +22,6 @@ export function WeeklyReportCard() {
         item.minutes.toString(),
         item.questions.toString(),
       ]),
-    });
-    const lastTableY = docWithTables.lastAutoTable?.finalY ?? 30;
-    autoTable(doc, {
-      head: [["Hedef", "Hedef Değeri", "Durum"]],
-      body: goals.map((goal) => [
-        goal.title,
-        `${goal.target} ${goal.unit}`,
-        `${goal.current} ${goal.unit}`,
-      ]),
-      startY: lastTableY + 10,
     });
     doc.save("haftalik-rapor.pdf");
   };

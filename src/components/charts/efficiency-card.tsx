@@ -23,7 +23,7 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
   const targetEfficiency = 0.45;
   const percent = Math.min(Math.round((avgEfficiency / targetEfficiency) * 100), 120);
   const gaugeData = [
-    { name: "Kalan", value: Math.max(0, 100 - Math.min(percent, 100)), fill: "#e2e8f0" },
+    { name: "Kalan", value: Math.max(0, 100 - Math.min(percent, 100)), fill: "#334155" },
     { name: "Verim", value: Math.min(percent, 100), fill: "#10b981" },
   ];
   const bestDay =
@@ -72,7 +72,16 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
                 startAngle={90}
                 endAngle={-270}
               >
-                <Tooltip formatter={(value: number) => `${value}%`} />
+                <Tooltip 
+                  formatter={(value: number) => `${value}%`}
+                  contentStyle={{
+                    backgroundColor: "rgba(15, 23, 42, 0.95)",
+                    backdropFilter: "blur(12px)",
+                    borderRadius: "0.75rem",
+                    border: "1px solid rgba(148, 163, 184, 0.2)",
+                    color: "#f1f5f9",
+                  }}
+                />
                 <RadialBar dataKey="value" cornerRadius={20} />
               </RadialBarChart>
             </ResponsiveContainer>

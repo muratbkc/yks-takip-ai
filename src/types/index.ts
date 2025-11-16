@@ -34,6 +34,9 @@ export type LessonType =
   | "AYT Sosyoloji" // Sosyal-2 içinde ~3
   | "AYT Mantık"; // Sosyal-2 içinde ~2
 
+export type StudyField = "sayisal" | "esit-agirlik" | "sozel";
+export type MockExamType = "TYT" | "AYT" | "Ders";
+
 export type Difficulty = "kolay" | "orta" | "zor";
 
 export interface StudyEntry {
@@ -52,13 +55,31 @@ export interface StudyEntry {
   };
 }
 
+export interface StudentProfile {
+  id: string;
+  email?: string | null;
+  fullName?: string | null;
+  targetExam?: string | null;
+  studyField?: StudyField | null;
+  updatedAt?: string | null;
+}
+
+export interface MockExamDetail {
+    lesson: LessonType;
+    correct: number;
+    wrong: number;
+    empty: number;
+    net: number;
+}
+
 export interface MockExam {
   id: string;
   title: string;
   date: string;
+  examType: MockExamType;
   duration?: number;
   difficulty: Difficulty;
-  summary: Array<{ lesson: LessonType; net: number }>;
+  summary: MockExamDetail[]; // Form tarafında kullanılacak, veritabanında değil
   weakTopics?: string[];
 }
 
