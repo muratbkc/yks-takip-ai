@@ -1,7 +1,7 @@
 "use client";
 
 import { useStudyStore } from "@/store/use-study-store";
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { format, subDays, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { tr } from "date-fns/locale";
 import {
@@ -441,8 +441,8 @@ export function DataHistoryTable() {
                       : "0.00";
                     
                     return (
-                      <>
-                        <TableRow key={entry.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                      <Fragment key={entry.id}>
+                        <TableRow className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
                           <TableCell className="font-medium">
                             {format(new Date(entry.date), "dd MMM yyyy", { locale: tr })}
                           </TableCell>
@@ -485,7 +485,7 @@ export function DataHistoryTable() {
                           </TableCell>
                         </TableRow>
                         {isExpanded && (
-                          <TableRow>
+                          <TableRow key={`${entry.id}-details`}>
                             <TableCell colSpan={8} className="bg-slate-50 dark:bg-slate-900/30">
                               <div className="p-4 space-y-3">
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -533,7 +533,7 @@ export function DataHistoryTable() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })
                 )}
@@ -679,8 +679,8 @@ export function DataHistoryTable() {
                     const isExpanded = expandedRow === exam.id;
                     
                     return (
-                      <>
-                        <TableRow key={exam.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                      <Fragment key={exam.id}>
+                        <TableRow className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
                           <TableCell className="font-medium">
                             {format(new Date(exam.date), "dd MMM yyyy", { locale: tr })}
                           </TableCell>
@@ -729,7 +729,7 @@ export function DataHistoryTable() {
                           </TableCell>
                         </TableRow>
                         {isExpanded && (
-                          <TableRow>
+                          <TableRow key={`${exam.id}-details`}>
                             <TableCell colSpan={7} className="bg-slate-50 dark:bg-slate-900/30">
                               <div className="p-4 space-y-3">
                                 <h4 className="font-semibold text-slate-900 dark:text-white">
@@ -771,7 +771,7 @@ export function DataHistoryTable() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })
                 )}
