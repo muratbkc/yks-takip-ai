@@ -13,6 +13,12 @@ import {
 import { useState, useMemo } from "react";
 import { subDays } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  chartSecondaryTick,
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+  chartTooltipStyle,
+} from "@/lib/chart-theme";
 
 interface LessonRadarProps {
   entries: StudyEntry[];
@@ -51,10 +57,10 @@ export function LessonRadarCard({ entries }: LessonRadarProps) {
     .slice(0, 3);
 
   return (
-    <div className="glass rounded-3xl p-4">
-      <div className="flex items-center justify-between pb-4">
+    <div className="chart-card space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+          <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-200">
             Ders Bazlı Dağılım
           </p>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -62,7 +68,7 @@ export function LessonRadarCard({ entries }: LessonRadarProps) {
           </h3>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+          <span className="chart-pill">
             {distribution.length} ders
           </span>
           <Tabs value={timeFilter} onValueChange={(value) => setTimeFilter(value as TimeFilter)}>
@@ -74,48 +80,44 @@ export function LessonRadarCard({ entries }: LessonRadarProps) {
           </Tabs>
         </div>
       </div>
-      <div className="h-64">
+      <div className="chart-panel h-64 p-3 text-slate-700 dark:text-slate-200">
         <ResponsiveContainer>
-          <RadarChart data={distribution}>
-            <PolarGrid stroke="#64748b" strokeOpacity={0.3} />
+          <RadarChart data={distribution} style={{ backgroundColor: 'transparent' }}>
+            <PolarGrid stroke="var(--chart-grid)" />
             <PolarAngleAxis 
               dataKey="lesson" 
-              tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }}
+              tick={chartSecondaryTick}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(15, 23, 42, 0.95)",
-                backdropFilter: "blur(12px)",
-                borderRadius: "0.75rem",
-                border: "1px solid rgba(148, 163, 184, 0.2)",
-                color: "#f1f5f9",
-              }}
+              contentStyle={chartTooltipStyle}
+              labelStyle={chartTooltipLabelStyle}
+              itemStyle={chartTooltipItemStyle}
             />
             <Radar
               name="Dakika"
               dataKey="minutes"
-              stroke="#8b5cf6"
-              fill="#a78bfa"
-              fillOpacity={0.5}
+              stroke="var(--chart-series-1)"
+              fill="var(--chart-series-1-soft)"
+              fillOpacity={0.6}
               strokeWidth={2}
             />
             <Radar
               name="Soru"
               dataKey="questions"
-              stroke="#f59e0b"
-              fill="#fbbf24"
-              fillOpacity={0.4}
+              stroke="var(--chart-series-2)"
+              fill="var(--chart-series-2-soft)"
+              fillOpacity={0.45}
               strokeWidth={2}
             />
           </RadarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 grid gap-4 text-sm md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-100 p-3 dark:border-slate-800">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+      <div className="grid gap-4 text-sm md:grid-cols-2">
+        <div className="chart-stat text-slate-600 dark:text-slate-200">
+          <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">
             En çok çalışılan dersler
           </p>
-          <ul className="mt-2 space-y-1 text-slate-600 dark:text-slate-300">
+          <ul className="mt-2 space-y-1">
             {topLessons.map((lesson) => (
               <li key={lesson.lesson} className="flex items-center justify-between">
                 <span>{lesson.lesson}</span>

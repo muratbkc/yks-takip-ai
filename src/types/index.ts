@@ -80,7 +80,6 @@ export interface MockExam {
   duration?: number;
   difficulty: Difficulty;
   summary: MockExamDetail[]; // Form tarafında kullanılacak, veritabanında değil
-  weakTopics?: string[];
 }
 
 export interface Goal {

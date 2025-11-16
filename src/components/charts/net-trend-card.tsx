@@ -10,12 +10,20 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import type { MockExam } from "@/types";
+import type { LessonType, MockExam } from "@/types";
 import { useMemo, useState } from "react";
 import { getLessonOptionsForField } from "@/lib/lesson-catalog";
 import { useStudyStore } from "@/store/use-study-store";
 import { subDays } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  chartPrimaryTick,
+  chartSecondaryTick,
+  chartTooltipStyle,
+  chartTooltipLabelStyle,
+  chartTooltipItemStyle,
+  getChartLegendStyle,
+} from "@/lib/chart-theme";
 
 interface NetTrendCardProps {
   exams: MockExam[];
@@ -26,19 +34,52 @@ type ChartView = "overall" | "lesson" | "all-lessons";
 type TimeFilter = "week" | "month" | "all";
 
 const LESSON_COLORS = [
-  "#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ec4899",
-  "#14b8a6", "#f97316", "#8b5cf6", "#06b6d4", "#a855f7",
-  "#84cc16", "#ef4444"
+  "#4f46e5",
+  "#0ea5e9",
+  "#f97316",
+  "#10b981",
+  "#ec4899",
+  "#14b8a6",
+  "#f43f5e",
+  "#a855f7",
+  "#eab308",
+  "#38bdf8",
+  "#84cc16",
+  "#fb7185",
 ];
 
 export function NetTrendCard({ exams }: NetTrendCardProps) {
   const profile = useStudyStore((state) => state.profile);
   const [activeTab, setActiveTab] = useState<ExamTab>("TYT");
   const [view, setView] = useState<ChartView>("overall");
-  const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<LessonType | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
-  const lessonOptions = useMemo(() => getLessonOptionsForField(profile?.studyField), [profile]);
+  const lessonOptions = useMemo(
+    () => getLessonOptionsForField(profile?.studyField),
+    [profile],
+  );
+
+  const tytLessonOptions = useMemo(
+    () => lessonOptions.filter((lesson) => !lesson.toUpperCase().startsWith("AYT")),
+    [lessonOptions],
+  );
+
+  const aytLessonOptions = useMemo(
+    () => lessonOptions.filter((lesson) => lesson.toUpperCase().startsWith("AYT")),
+    [lessonOptions],
+  );
+
+  const currentLessonOptions: LessonType[] =
+    activeTab === "TYT" ? tytLessonOptions : aytLessonOptions;
+
+  const normalizedLesson = useMemo(() => {
+    if (currentLessonOptions.length === 0) return null;
+    if (!selectedLesson) return currentLessonOptions[0];
+    return currentLessonOptions.includes(selectedLesson)
+      ? selectedLesson
+      : currentLessonOptions[0];
+  }, [currentLessonOptions, selectedLesson]);
 
   // Aktif sekmeye göre sınavları filtrele
   const filteredExams = useMemo(() => {
@@ -61,6 +102,8 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
   }, [exams, activeTab, timeFilter]);
 
   // Grafik verilerini hazırla
+  const lessonForChart = view === "lesson" ? normalizedLesson : null;
+
   const chartData = useMemo(() => {
     if (!filteredExams || filteredExams.length === 0) return [];
 
@@ -84,10 +127,17 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
     }
 
     if (view === "all-lessons") {
+      type LessonSeriesPoint = {
+        date: string;
+        dateLabel: string;
+        rawDate: string;
+        [lesson: string]: string | number;
+      };
+
       // Tüm dersler: Her ders için ayrı çizgi
       return filteredExams
-        .map(exam => {
-          const dataPoint: any = {
+        .map((exam): LessonSeriesPoint => {
+          const dataPoint: LessonSeriesPoint = {
             date: exam.date,
             dateLabel: new Date(exam.date).toLocaleDateString("tr-TR", {
               day: '2-digit',
@@ -96,22 +146,22 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
             }),
             rawDate: exam.date,
           };
-          
+
           // Her dersin netini ayrı bir alan olarak ekle
-          exam.summary.forEach(item => {
+          exam.summary.forEach((item) => {
             dataPoint[item.lesson] = parseFloat(item.net.toFixed(1));
           });
-          
+
           return dataPoint;
         })
         .sort((a, b) => a.rawDate.localeCompare(b.rawDate));
     }
 
-    if (view === "lesson" && selectedLesson) {
+    if (view === "lesson" && lessonForChart) {
       // Ders bazlı: Seçili dersin neti
       return filteredExams
         .map(exam => {
-          const lessonResult = exam.summary.find(item => item.lesson === selectedLesson);
+          const lessonResult = exam.summary.find(item => item.lesson === lessonForChart);
           return lessonResult ? {
             date: exam.date,
             dateLabel: new Date(exam.date).toLocaleDateString("tr-TR", {
@@ -129,7 +179,7 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
     }
 
     return [];
-  }, [filteredExams, view, selectedLesson]);
+  }, [filteredExams, view, lessonForChart]);
 
   // Tüm Dersler görünümü için dersleri topla
   const allLessons = useMemo(() => {
@@ -145,25 +195,39 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
 
   // İstatistikler
   const stats = useMemo(() => {
-    if (chartData.length === 0 || view === "all-lessons") return { avg: 0, max: 0, min: 0, latest: 0 };
-    const nets = chartData.map(d => d.net);
+    if (chartData.length === 0 || view === "all-lessons") {
+      return { avg: 0, max: 0, min: 0, latest: 0 };
+    }
+
+    const nets = (chartData as Array<{ net: number }>).map((d) => d.net);
+
     return {
       avg: (nets.reduce((a, b) => a + b, 0) / nets.length).toFixed(1),
       max: Math.max(...nets).toFixed(1),
       min: Math.min(...nets).toFixed(1),
-      latest: nets[nets.length - 1]?.toFixed(1) || '0',
+      latest: nets[nets.length - 1]?.toFixed(1) || "0",
     };
   }, [chartData, view]);
 
+  const activeLineColor =
+    activeTab === "TYT"
+      ? "var(--chart-series-tyt)"
+      : "var(--chart-series-ayt)";
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="chart-card flex h-full flex-col gap-4">
       {/* Header */}
-      <div className="border-b border-slate-200 p-4 dark:border-slate-800">
-        <div className="flex items-center justify-between mb-3">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Deneme Net Gelişimi</p>
+            <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-200">Deneme Net Gelişimi</p>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-              {activeTab} {view === 'overall' ? 'Genel Trend' : view === 'all-lessons' ? 'Tüm Dersler' : `• ${selectedLesson || 'Ders'}`}
+              {activeTab}{" "}
+              {view === 'overall'
+                ? 'Genel Trend'
+                : view === 'all-lessons'
+                  ? 'Tüm Dersler'
+                  : `• ${normalizedLesson || 'Ders'}`}
             </h3>
           </div>
           
@@ -203,20 +267,30 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
             </div>
             
             {view === 'lesson' && (
-              <select 
-                value={selectedLesson || ''} 
-                onChange={e => setSelectedLesson(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-              >
-                <option value="" disabled>Ders Seçin</option>
-                {lessonOptions.map(lesson => <option key={lesson} value={lesson}>{lesson}</option>)}
-              </select>
+              currentLessonOptions.length > 0 ? (
+                <select 
+                  value={normalizedLesson || ''} 
+                  onChange={e => setSelectedLesson(e.target.value as LessonType)}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                >
+                  <option value="" disabled>Ders Seçin</option>
+                  {currentLessonOptions.map(lesson => (
+                    <option key={lesson} value={lesson}>
+                      {lesson}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  Bu sekme için ders bulunamadı
+                </span>
+              )
             )}
           </div>
         </div>
 
         {/* TYT/AYT ve Zaman Filtreleri */}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 border-t pt-3" style={{ borderColor: "var(--chart-border)" }}>
           {/* TYT / AYT Tabs */}
           <div className="flex gap-2">
             <button
@@ -224,7 +298,7 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "TYT"
                   ? "bg-violet-500 text-white shadow-md dark:bg-violet-600"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                  : "bg-white/70 text-slate-600 shadow-inner hover:bg-white dark:bg-slate-900/60 dark:text-slate-300"
               }`}
             >
               TYT
@@ -234,7 +308,7 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                 activeTab === "AYT"
                   ? "bg-emerald-500 text-white shadow-md dark:bg-emerald-600"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                  : "bg-white/70 text-slate-600 shadow-inner hover:bg-white dark:bg-slate-900/60 dark:text-slate-300"
               }`}
             >
               AYT
@@ -254,50 +328,57 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
 
       {/* İstatistikler - Sadece Genel ve Tek Ders görünümlerinde göster */}
       {view !== "all-lessons" && (
-        <div className="grid grid-cols-4 gap-2 border-b border-slate-200 p-4 dark:border-slate-800">
-          <div className="text-center">
-            <p className="text-xs text-slate-500">Son</p>
+        <div className="grid grid-cols-4 gap-2 text-slate-600 dark:text-slate-300">
+          <div className="chart-stat text-center">
+            <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">Son</p>
             <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.latest}</p>
           </div>
-          <div className="text-center">
-            <p className="text-xs text-slate-500">Ortalama</p>
+          <div className="chart-stat text-center">
+            <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">Ortalama</p>
             <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.avg}</p>
           </div>
-          <div className="text-center">
-            <p className="text-xs text-slate-500">En Yüksek</p>
+          <div className="chart-stat text-center">
+            <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">En Yüksek</p>
             <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{stats.max}</p>
           </div>
-          <div className="text-center">
-            <p className="text-xs text-slate-500">En Düşük</p>
+          <div className="chart-stat text-center">
+            <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">En Düşük</p>
             <p className="text-lg font-bold text-rose-600 dark:text-rose-400">{stats.min}</p>
           </div>
         </div>
       )}
 
       {/* Grafik */}
-      <div className="flex-grow p-4" style={{ minHeight: '300px' }}>
+      <div
+        className="chart-panel flex-grow p-4 text-slate-700 dark:text-slate-200"
+        style={{ minHeight: "300px" }}
+      >
         {chartData.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               {activeTab} için henüz deneme verisi yok
             </p>
           </div>
         ) : view === "all-lessons" ? (
           // Tüm Dersler görünümü - Her ders için ayrı çizgi
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#64748b" strokeOpacity={0.2} />
+            <LineChart 
+              data={chartData} 
+              margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
+              style={{ backgroundColor: 'transparent' }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
               <XAxis 
                 dataKey="dateLabel" 
                 fontSize={11}
-                tick={{ fill: '#94a3b8', fontWeight: 500 }}
+                tick={chartSecondaryTick}
                 tickLine={false}
                 axisLine={false}
                 height={40}
               />
               <YAxis 
                 fontSize={12}
-                tick={{ fill: '#94a3b8', fontWeight: 600 }}
+                tick={chartPrimaryTick}
                 tickLine={false}
                 axisLine={false}
                 width={45}
@@ -306,26 +387,16 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
                   value: 'Net', 
                   angle: -90, 
                   position: 'insideLeft',
-                  style: { fill: '#94a3b8', fontSize: 12, fontWeight: 600 }
+                  style: { fill: 'var(--chart-axis)', fontSize: 12, fontWeight: 600 }
                 }}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(15, 23, 42, 0.95)",
-                  backdropFilter: "blur(12px)",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(148, 163, 184, 0.2)",
-                  color: "#f1f5f9",
-                  padding: "12px",
-                }}
-                labelStyle={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '4px' }}
-                itemStyle={{ color: '#f1f5f9' }}
+                contentStyle={chartTooltipStyle}
+                labelStyle={chartTooltipLabelStyle}
+                itemStyle={chartTooltipItemStyle}
               />
               <Legend 
-                wrapperStyle={{ 
-                  color: '#94a3b8',
-                  paddingTop: '10px'
-                }} 
+                wrapperStyle={getChartLegendStyle({ paddingTop: 10 })}
                 iconType="line"
               />
               {allLessons.map((lesson, index) => (
@@ -346,33 +417,37 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
         ) : (
           // Genel ve Tek Ders görünümü
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+            <LineChart 
+              data={chartData} 
+              margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
+              style={{ backgroundColor: 'transparent' }}
+            >
               <defs>
                 <linearGradient id={`gradient-${activeTab}`} x1="0" y1="0" x2="0" y2="1">
                   <stop 
                     offset="5%" 
-                    stopColor={activeTab === 'TYT' ? '#8b5cf6' : '#10b981'} 
-                    stopOpacity={0.3} 
+                    stopColor={activeLineColor}
+                    stopOpacity={0.32} 
                   />
                   <stop 
                     offset="95%" 
-                    stopColor={activeTab === 'TYT' ? '#8b5cf6' : '#10b981'} 
-                    stopOpacity={0.05} 
+                    stopColor={activeLineColor}
+                    stopOpacity={0.08} 
                   />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#64748b" strokeOpacity={0.2} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
               <XAxis 
                 dataKey="dateLabel" 
                 fontSize={11}
-                tick={{ fill: '#94a3b8', fontWeight: 500 }}
+                tick={chartSecondaryTick}
                 tickLine={false}
                 axisLine={false}
                 height={40}
               />
               <YAxis 
                 fontSize={12}
-                tick={{ fill: '#94a3b8', fontWeight: 600 }}
+                tick={chartPrimaryTick}
                 tickLine={false}
                 axisLine={false}
                 width={45}
@@ -381,35 +456,25 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
                   value: 'Net', 
                   angle: -90, 
                   position: 'insideLeft',
-                  style: { fill: '#94a3b8', fontSize: 12, fontWeight: 600 }
+                  style: { fill: 'var(--chart-axis)', fontSize: 12, fontWeight: 600 }
                 }}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "rgba(15, 23, 42, 0.95)",
-                  backdropFilter: "blur(12px)",
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(148, 163, 184, 0.2)",
-                  color: "#f1f5f9",
-                  padding: "12px",
-                }}
-                labelStyle={{ color: '#f1f5f9', fontWeight: 600, marginBottom: '4px' }}
-                itemStyle={{ color: '#f1f5f9' }}
+                contentStyle={chartTooltipStyle}
+                labelStyle={chartTooltipLabelStyle}
+                itemStyle={chartTooltipItemStyle}
               />
               <Legend 
-                wrapperStyle={{ 
-                  color: '#94a3b8',
-                  paddingTop: '10px'
-                }} 
+                wrapperStyle={getChartLegendStyle({ paddingTop: 10 })}
               />
               <Line 
                 type="monotone" 
                 dataKey="net" 
-                name={view === 'overall' ? `${activeTab} Net` : selectedLesson || 'Net'} 
-                stroke={activeTab === 'TYT' ? '#8b5cf6' : '#10b981'} 
+                name={view === 'overall' ? `${activeTab} Net` : normalizedLesson || 'Net'} 
+                stroke={activeLineColor}
                 strokeWidth={3}
                 dot={{ 
-                  fill: activeTab === 'TYT' ? '#8b5cf6' : '#10b981', 
+                  fill: activeLineColor, 
                   r: 6,
                   strokeWidth: 2,
                   stroke: '#fff'

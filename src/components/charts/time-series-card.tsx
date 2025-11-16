@@ -1,6 +1,12 @@
 "use client";
 
 import { getDailySeries, getWeeklyTotals } from "@/lib/analytics";
+import {
+  chartPrimaryTick,
+  chartSecondaryTick,
+  chartTooltipStyle,
+  getChartLegendStyle,
+} from "@/lib/chart-theme";
 import { formatDate } from "@/lib/utils";
 import type { StudyEntry } from "@/types";
 import { useState } from "react";
@@ -41,17 +47,17 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
   const MINUTES_TARGET = 300;
 
   return (
-    <div className="glass rounded-3xl p-4">
-      <div className="flex items-center justify-between pb-4">
+    <div className="chart-card space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+          <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-200">
             Zaman Bazlı Analizler
           </p>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
             Günlük çalışma süresi
           </h3>
         </div>
-        <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1 dark:bg-slate-800">
+        <div className="flex items-center gap-1 rounded-full bg-white/70 p-1 text-slate-600 shadow-inner dark:bg-slate-900/60">
           <button
             onClick={() => setTimeRange("weekly")}
             className={`rounded-full px-3 py-1 text-xs font-medium transition ${
@@ -74,46 +80,51 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
           </button>
         </div>
       </div>
-      <div className="h-60">
+      <div className="chart-panel h-60 p-3">
         <ResponsiveContainer>
-          <ComposedChart data={dailySeries}>
+          <ComposedChart data={dailySeries} style={{ backgroundColor: 'transparent' }}>
             <defs>
               <linearGradient id="minutes" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.6} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.05} />
+                <stop
+                  offset="5%"
+                  stopColor="var(--chart-series-1)"
+                  stopOpacity={0.55}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--chart-series-1)"
+                  stopOpacity={0.08}
+                />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} />
-            <XAxis 
-              dataKey="date" 
-              tickLine={false} 
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--chart-grid)"
+            />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
               axisLine={false}
-              tick={{ fill: '#64748b' }}
-              tickFormatter={(value) => formatDate(value)} 
+              tick={chartSecondaryTick}
+              tickFormatter={(value) => formatDate(value)}
             />
             <YAxis
               yAxisId="left"
               tickLine={false}
               axisLine={false}
-              tick={{ fill: '#6366f1' }}
-              stroke="#6366f1"
+              tick={chartPrimaryTick}
+              stroke="var(--chart-series-1)"
             />
             <YAxis
               yAxisId="right"
               orientation="right"
               tickLine={false}
               axisLine={false}
-              tick={{ fill: '#f97316' }}
-              stroke="#f97316"
+              tick={chartPrimaryTick}
+              stroke="var(--chart-series-2)"
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(15, 23, 42, 0.95)",
-                backdropFilter: "blur(12px)",
-                borderRadius: "0.75rem",
-                border: "1px solid rgba(148, 163, 184, 0.2)",
-                color: "#f1f5f9",
-              }}
+              contentStyle={chartTooltipStyle}
               labelFormatter={(label: string) => {
                 if (!label.includes("-")) return label;
                 const [year, month, day] = label.split("-").map(Number);
@@ -125,17 +136,17 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
                 });
               }}
             />
-            <Legend />
+            <Legend wrapperStyle={getChartLegendStyle()} />
             <ReferenceLine
               yAxisId="left"
               y={MINUTES_TARGET}
-              stroke="#10b981"
+              stroke="var(--chart-positive)"
               strokeDasharray="5 5"
               strokeWidth={2}
               label={{
                 value: "Hedef 300 dk",
                 position: "insideTopRight",
-                fill: "#10b981",
+                fill: "var(--chart-positive)",
                 fontSize: 11,
                 fontWeight: 600,
               }}
@@ -145,7 +156,7 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
               type="monotone"
               dataKey="minutes"
               name="Dakika"
-              stroke="#8b5cf6"
+              stroke="var(--chart-series-1)"
               fill="url(#minutes)"
               strokeWidth={3}
             />
@@ -155,62 +166,66 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
               name="Soru Sayısı"
               barSize={14}
               radius={[6, 6, 0, 0]}
-              fill="#f59e0b"
-              opacity={0.8}
+              fill="var(--chart-series-2)"
+              opacity={0.92}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-        <div className="rounded-2xl border border-slate-100 p-3 text-slate-600 dark:border-slate-800 dark:text-slate-300">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+      <div className="grid grid-cols-3 gap-4 text-sm">
+        <div className="chart-stat text-slate-600 dark:text-slate-200">
+          <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">
             Günlük ortalama
           </p>
           <p className="text-xl font-semibold text-slate-900 dark:text-white">
             {avgMinutes} dk
           </p>
-          <p className="text-xs">
+          <p className="text-xs text-slate-600/90 dark:text-slate-300">
             Hedeften {Math.abs(avgMinutes - MINUTES_TARGET)} dk{" "}
             {avgMinutes >= MINUTES_TARGET ? "fazla" : "eksik"}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-100 p-3 text-slate-600 dark:border-slate-800 dark:text-slate-300">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+        <div className="chart-stat text-slate-600 dark:text-slate-200">
+          <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">
             En verimli gün
           </p>
           <p className="text-xl font-semibold text-slate-900 dark:text-white">
             {bestDay.minutes} dk
           </p>
-          <p className="text-xs">
+          <p className="text-xs text-slate-600/90 dark:text-slate-300">
             {bestDay.date !== "-" ? formatDate(bestDay.date) : "-"} •{" "}
             {bestDay.questions} soru
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-100 p-3 text-slate-600 dark:border-slate-800 dark:text-slate-300">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+        <div className="chart-stat text-slate-600 dark:text-slate-200">
+          <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">
             Toplam ({days} gün)
           </p>
           <p className="text-xl font-semibold text-slate-900 dark:text-white">
             {totalMinutes} dk
           </p>
-          <p className="text-xs">{totalQuestions} soru</p>
+          <p className="text-xs text-slate-600/90 dark:text-slate-300">{totalQuestions} soru</p>
         </div>
       </div>
       {timeRange === "weekly" && (
-        <div className="mt-4">
-          <p className="mb-2 text-xs uppercase tracking-wide text-slate-500">
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">
             Bu Haftanın Dökümü (Pzt-Paz)
           </p>
           <div className="grid grid-cols-7 gap-2 text-center text-sm">
             {weekly.map((item) => (
               <div
                 key={item.label}
-                className="rounded-lg border border-slate-100 p-2 dark:border-slate-800"
+                className="rounded-lg border p-2"
+                style={{
+                  borderColor: "var(--chart-border)",
+                  background: "var(--chart-surface-muted)",
+                }}
               >
-                <p className="text-xs text-slate-500">{item.label}</p>
+                <p className="text-xs text-slate-600/80 dark:text-slate-300">{item.label}</p>
                 <p className="font-semibold text-slate-900 dark:text-white">
                   {item.minutes}
-                  <span className="ml-0.5 text-xs font-normal text-slate-400">
+                  <span className="ml-0.5 text-xs font-normal text-slate-500 dark:text-slate-400">
                     dk
                   </span>
                 </p>

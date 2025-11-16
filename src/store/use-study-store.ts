@@ -194,39 +194,50 @@ export const useStudyStore = create<StudyState>()(
                 .select("*")
                 .eq("exam_id", exam.id);
 
+              // Güvenli tarih parsing
+              const normalizeDate = (dateStr: string) => {
+                if (!dateStr) return new Date().toISOString().split('T')[0];
+                return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+              };
+
               return {
                 id: exam.id,
-                title: exam.title,
-                date: exam.date.split('T')[0], // Tarihi normalize et: YYYY-MM-DD
-                examType: exam.exam_type,
-                duration: exam.duration,
-                difficulty: exam.difficulty,
+                title: exam.title || 'Deneme',
+                date: normalizeDate(exam.date),
+                examType: exam.exam_type || 'TYT',
+                duration: exam.duration ?? 0,
+                difficulty: exam.difficulty || 'orta',
                 summary: details?.map((d) => ({
                   lesson: d.lesson,
-                  correct: d.correct,
-                  wrong: d.wrong,
-                  empty: d.empty,
-                  net: d.net,
+                  correct: d.correct ?? 0,
+                  wrong: d.wrong ?? 0,
+                  empty: d.empty ?? 0,
+                  net: d.net ?? 0,
                 })) || [],
-                weakTopics: exam.weak_topics,
               };
             })
           );
 
+          // Güvenli tarih parsing fonksiyonu
+          const normalizeDate = (dateStr: string) => {
+            if (!dateStr) return new Date().toISOString().split('T')[0];
+            return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+          };
+
           set({
             studyEntries: studyEntries?.map((entry) => ({
               id: entry.id,
-              date: entry.date.split('T')[0], // Tarihi normalize et: YYYY-MM-DD
-              lesson: entry.lesson,
-              subTopic: entry.sub_topic,
-              minutes: entry.minutes,
-              questionCount: entry.question_count,
-              notes: entry.notes,
-              studyType: entry.study_type,
-              timeSlot: entry.time_slot,
+              date: normalizeDate(entry.date),
+              lesson: entry.lesson || '',
+              subTopic: entry.sub_topic || '',
+              minutes: entry.minutes ?? 0,
+              questionCount: entry.question_count ?? 0,
+              notes: entry.notes || '',
+              studyType: entry.study_type || 'konu-calisma',
+              timeSlot: entry.time_slot || 'sabah',
               net: {
-                tyt: entry.tyt_net,
-                ayt: entry.ayt_net,
+                tyt: entry.tyt_net ?? null,
+                ayt: entry.ayt_net ?? null,
               },
             })) || [],
             mockExams: mockExams || [],

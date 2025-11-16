@@ -5,11 +5,67 @@
 :root {
   --background: 255 255 255;
   --foreground: 15 23 42;
+  --chart-axis: #0f172a;
+  --chart-axis-muted: #475569;
+  --chart-grid: rgba(15, 23, 42, 0.08);
+  --chart-legend: #1e293b;
+  --chart-tooltip-bg: rgba(255, 255, 255, 0.98);
+  --chart-tooltip-color: #0f172a;
+  --chart-tooltip-border: rgba(15, 23, 42, 0.12);
+  --chart-series-1: #4f46e5;
+  --chart-series-1-soft: rgba(79, 70, 229, 0.18);
+  --chart-series-2: #0ea5e9;
+  --chart-series-2-soft: rgba(14, 165, 233, 0.18);
+  --chart-series-3: #f97316;
+  --chart-series-3-soft: rgba(249, 115, 22, 0.2);
+  --chart-series-tyt: #4f46e5;
+  --chart-series-ayt: #059669;
+  --chart-positive: #059669;
+  --chart-warning: #facc15;
+  --chart-neutral-strong: #1e293b;
+  --chart-neutral-soft: rgba(15, 23, 42, 0.1);
+  --chart-surface: rgba(255, 255, 255, 0.95);
+  --chart-surface-alt: rgba(248, 250, 252, 0.92);
+  --chart-surface-muted: rgba(241, 245, 249, 0.9);
+  --chart-border: rgba(15, 23, 42, 0.08);
+  --chart-divider: rgba(226, 232, 240, 0.8);
+  --chart-card-shadow: 0 25px 45px rgba(15, 23, 42, 0.08);
+  --chart-panel-bg: rgba(71, 85, 105, 0.95);
+  --chart-panel-border: rgba(15, 23, 42, 0.15);
+  --chart-panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .dark {
   --background: 8 14 28;
   --foreground: 248 250 252;
+  --chart-axis: #e2e8f0;
+  --chart-axis-muted: #cbd5f5;
+  --chart-grid: rgba(148, 163, 184, 0.25);
+  --chart-legend: #f1f5f9;
+  --chart-tooltip-bg: rgba(15, 23, 42, 0.96);
+  --chart-tooltip-color: #f8fafc;
+  --chart-tooltip-border: rgba(148, 163, 184, 0.3);
+  --chart-series-1: #a5b4fc;
+  --chart-series-1-soft: rgba(165, 180, 252, 0.3);
+  --chart-series-2: #38bdf8;
+  --chart-series-2-soft: rgba(56, 189, 248, 0.25);
+  --chart-series-3: #fb923c;
+  --chart-series-3-soft: rgba(251, 146, 60, 0.3);
+  --chart-series-tyt: #a5b4fc;
+  --chart-series-ayt: #34d399;
+  --chart-positive: #34d399;
+  --chart-warning: #fde047;
+  --chart-neutral-strong: #e2e8f0;
+  --chart-neutral-soft: rgba(148, 163, 184, 0.25);
+  --chart-surface: rgba(15, 23, 42, 0.8);
+  --chart-surface-alt: rgba(15, 23, 42, 0.6);
+  --chart-surface-muted: rgba(30, 41, 59, 0.55);
+  --chart-border: rgba(148, 163, 184, 0.35);
+  --chart-divider: rgba(51, 65, 85, 0.9);
+  --chart-card-shadow: 0 20px 45px rgba(2, 6, 23, 0.65);
+  --chart-panel-bg: rgba(15, 23, 42, 0.98);
+  --chart-panel-border: rgba(51, 65, 85, 0.9);
+  --chart-panel-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.12);
 }
 
 body {
@@ -26,6 +82,53 @@ body {
 
   .card-grid {
     @apply grid gap-6 sm:grid-cols-2 xl:grid-cols-3;
+  }
+}
+
+@layer components {
+  .chart-card {
+    border-radius: 1.5rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, var(--chart-surface), var(--chart-surface-alt));
+    border: 1px solid var(--chart-border);
+    box-shadow: var(--chart-card-shadow);
+  }
+
+  .chart-panel {
+    border-radius: 1.25rem;
+    background: var(--chart-panel-bg);
+    border: 1px solid var(--chart-panel-border);
+    box-shadow: var(--chart-panel-shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--chart-divider);
+  }
+
+  .chart-divider {
+    border-color: var(--chart-divider);
+  }
+
+  .chart-stat {
+    border-radius: 1.1rem;
+    padding: 0.85rem;
+    background: var(--chart-surface-muted);
+    border: 1px solid var(--chart-border);
+  }
+
+  .chart-pill {
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    background: var(--chart-surface-muted);
+    border: 1px solid var(--chart-border);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--chart-neutral-strong);
   }
 }
 
@@ -119,5 +222,11 @@ body {
 
 .animate-border-pulse {
   animation: border-pulse 1.2s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+}
+
+/* Recharts bileşenlerinin SVG arka planlarını şeffaf yap */
+.recharts-wrapper,
+.recharts-surface {
+  background: transparent !important;
 }
 

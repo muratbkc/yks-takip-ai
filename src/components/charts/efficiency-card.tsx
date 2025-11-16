@@ -8,6 +8,11 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import {
+  chartTooltipItemStyle,
+  chartTooltipLabelStyle,
+  chartTooltipStyle,
+} from "@/lib/chart-theme";
 
 interface EfficiencyCardProps {
   entries: StudyEntry[];
@@ -23,8 +28,16 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
   const targetEfficiency = 0.45;
   const percent = Math.min(Math.round((avgEfficiency / targetEfficiency) * 100), 120);
   const gaugeData = [
-    { name: "Kalan", value: Math.max(0, 100 - Math.min(percent, 100)), fill: "#334155" },
-    { name: "Verim", value: Math.min(percent, 100), fill: "#10b981" },
+    {
+      name: "Kalan",
+      value: Math.max(0, 100 - Math.min(percent, 100)),
+      fill: "var(--chart-neutral-soft)",
+    },
+    {
+      name: "Verim",
+      value: Math.min(percent, 100),
+      fill: "var(--chart-positive)",
+    },
   ];
   const bestDay =
     lastSeven.reduce(
@@ -44,10 +57,10 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
         });
 
   return (
-    <div className="glass rounded-3xl p-4">
-      <div className="flex items-center justify-between pb-4">
+    <div className="chart-card space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">
+          <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-200">
             Verimlilik
           </p>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -55,14 +68,14 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
           </h3>
         </div>
         <div className="text-right">
-          <p className="text-xs text-slate-500">Bugün</p>
-          <p className="text-sm font-semibold text-emerald-500">
+          <p className="text-xs text-slate-600 dark:text-slate-400">Bugün</p>
+          <p className="text-sm font-semibold text-emerald-500 dark:text-emerald-400">
             {latest.toFixed(2)} soru/dk
           </p>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-[180px_1fr]">
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-100 bg-white/70 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+        <div className="chart-stat flex flex-col items-center justify-center text-slate-700 dark:text-slate-200">
           <div className="h-36 w-36">
             <ResponsiveContainer>
               <RadialBarChart
@@ -70,46 +83,43 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
                 outerRadius="100%"
                 data={gaugeData}
                 startAngle={90}
-                endAngle={-270}
+                endAngle={450}
+                style={{ backgroundColor: 'transparent' }}
               >
                 <Tooltip 
                   formatter={(value: number) => `${value}%`}
-                  contentStyle={{
-                    backgroundColor: "rgba(15, 23, 42, 0.95)",
-                    backdropFilter: "blur(12px)",
-                    borderRadius: "0.75rem",
-                    border: "1px solid rgba(148, 163, 184, 0.2)",
-                    color: "#f1f5f9",
-                  }}
+                  contentStyle={chartTooltipStyle}
+                  labelStyle={chartTooltipLabelStyle}
+                  itemStyle={chartTooltipItemStyle}
                 />
                 <RadialBar dataKey="value" cornerRadius={20} />
               </RadialBarChart>
             </ResponsiveContainer>
           </div>
-          <p className="mt-2 text-xs uppercase tracking-wide text-slate-500">
+          <p className="mt-2 text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
             7 günlük ortalama
           </p>
           <p className="text-lg font-semibold text-slate-900 dark:text-white">
             {avgEfficiency.toFixed(2)} soru/dk
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             Hedef: {targetEfficiency.toFixed(2)}
           </p>
         </div>
-        <div className="space-y-3">
-          <div className="rounded-2xl border border-slate-100 p-3 dark:border-slate-800">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+        <div className="space-y-3 text-slate-600 dark:text-slate-300">
+          <div className="chart-stat">
+            <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">
               En verimli gün
             </p>
             <p className="text-lg font-semibold text-slate-900 dark:text-white">
               {formatter(bestDay.date)} • {bestDay.efficiency.toFixed(2)}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Pomodoro odak ve kolay sorularla tempoyu koru
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-100 p-3 dark:border-slate-800">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+          <div className="chart-stat">
+            <p className="text-xs uppercase tracking-wide text-slate-600/80 dark:text-slate-300">
               En düşük gün
             </p>
             <p className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -118,7 +128,7 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
                 ? "0.00"
                 : worstDay.efficiency.toFixed(2)}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               Çalışma türünü değiştir veya kısa tekrar blokları ekle
             </p>
           </div>

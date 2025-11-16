@@ -93,7 +93,7 @@ export default function Page() {
           <TabsContent value="entry">
             <div className="mt-6 grid grid-cols-1 place-items-center gap-6">
               <div className="w-full max-w-3xl">
-              <DailyLogForm />
+                <DailyLogForm />
               </div>
             </div>
           </TabsContent>

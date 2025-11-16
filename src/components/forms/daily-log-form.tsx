@@ -9,6 +9,7 @@ import {
   AYT_EA_LESSONS,
   AYT_SOZ_LESSONS
 } from "@/lib/lesson-catalog";
+import { getTopicsForLesson } from "@/lib/topics-catalog";
 import type { Difficulty, LessonType, StudyEntry, StudyType } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MinusCircle, PlusCircle } from "lucide-react";
@@ -87,7 +88,6 @@ const mockFormSchema = z.object({
     duration: z.number({ required_error: "Süre zorunludur.", invalid_type_error: "Geçerli bir süre girin." }).min(1, "Süre en az 1 dakika olmalıdır."),
     difficulty: z.custom<Difficulty>(),
     summary: z.array(mockSummarySchema).min(1, "En az bir ders sonucu eklemelisiniz."),
-    weakTopics: z.string().optional(),
 }).refine((data) => {
     // Toplam soru sayısı kontrolü
     return data.summary.every(item => {
@@ -145,7 +145,6 @@ export function DailyLogForm() {
     duration: 165,
     difficulty: "orta",
     summary: [], // Başlangıçta boş
-    weakTopics: "",
     notes: "",
   }), []);
 
@@ -201,7 +200,9 @@ export function DailyLogForm() {
       let lessonsToPopulate: LessonType[] = [];
 
       if (examType === "TYT") {
-          lessonsToPopulate = TYT_LESSONS;
+      // TYT denemesinde Geometri ayrı bir test değildir; Matematik'in içindedir.
+      // Bu yüzden TYT için Geometri'yi hariç tutuyoruz.
+      lessonsToPopulate = TYT_LESSONS.filter((l) => l !== "Geometri");
       } else if (examType === "AYT") {
           switch (profile?.studyField) {
               case "sayisal": lessonsToPopulate = AYT_SAY_LESSONS; break;
@@ -256,10 +257,6 @@ export function DailyLogForm() {
       setSuccess(`${data.lessons.length} ders kaydedildi.`);
       reset(defaultLogValues);
     } else if (data.formType === "mock") {
-      const weakTopics = data.weakTopics
-        ?.split(",")
-        .map((topic) => topic.trim())
-        .filter(Boolean);
       addMockExam({
         id: createId(),
         title: data.title,
@@ -268,7 +265,6 @@ export function DailyLogForm() {
         duration: data.duration,
         difficulty: data.difficulty,
         summary: data.summary,
-        weakTopics: data.weakTopics || undefined,
       });
       setSuccess(`"${data.title}" denemesi kaydedildi.`);
       reset(defaultLogValues);
@@ -349,9 +345,10 @@ export function DailyLogForm() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                  Çalışma Türü
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    Çalışma Türü
                   <select
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                                             {...register(`lessons.${index}.studyType`)}
@@ -400,6 +397,29 @@ export function DailyLogForm() {
                                             {...register(`lessons.${index}.questionCount`, { valueAsNumber: true })}
                   />
                 </label>
+                </div>
+                {(() => {
+                  const currentLesson = watch(`lessons.${index}.lesson`) || defaultLesson;
+                  const topicsForThisLesson = getTopicsForLesson(currentLesson);
+                  
+                  return (
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      Konu
+                      <input
+                        type="text"
+                        list={`topics-lesson-${index}-${currentLesson}`}
+                        placeholder="Seçin veya yazın..."
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        {...register(`lessons.${index}.subTopic`)}
+                      />
+                      <datalist id={`topics-lesson-${index}-${currentLesson}`}>
+                        {topicsForThisLesson.map((topic) => (
+                          <option key={topic} value={topic} className="text-slate-900 dark:text-slate-100" />
+                        ))}
+                      </datalist>
+                    </label>
+                  );
+                })()}
               </div>
             </div>
           ))}
@@ -465,10 +485,6 @@ export function DailyLogForm() {
                                 </select>
                             </label>
                         </div>
-                        <label className="text-sm font-medium text-slate-600 dark:text-slate-300 block">
-                            Zayıf Konular (virgülle ayır)
-                            <input {...register("weakTopics")} placeholder="Örn: İntegral, Paragraf" className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-900"/>
-                        </label>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Ders Bazlı Sonuçlar</p>
@@ -495,9 +511,9 @@ export function DailyLogForm() {
                                                     </optgroup>
                                                 ))}
                                             </select>
-                                        ) : (
-                                            <span className="font-semibold">{summaryValues?.[index]?.lesson}</span>
-                                        )}
+                    ) : (
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{summaryValues?.[index]?.lesson}</span>
+                    )}
                                         {examType === "Ders" && (
                                             <button type="button" onClick={() => removeSummary(index)} className="mb-1 inline-flex items-center justify-center rounded-xl border border-red-200 p-2 text-sm text-red-500 hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10">
                                         <MinusCircle className="h-4 w-4" />

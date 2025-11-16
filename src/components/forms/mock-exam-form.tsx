@@ -1,7 +1,7 @@
 "use client";
 
 import { useStudyStore } from "@/store/use-study-store";
-import type { Difficulty, LessonType } from "@/types";
+import type { Difficulty, LessonType, MockExamType } from "@/types";
 import { getMaxQuestionCount } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MinusCircle, PlusCircle, ArrowLeft } from "lucide-react";
@@ -24,6 +24,7 @@ const schema = z.object({
   date: z.string(),
   duration: z.number().min(60).max(240),
   difficulty: z.custom<Difficulty>(),
+  examType: z.custom<MockExamType>(),
   summary: z
     .array(
       z.object({
@@ -41,7 +42,6 @@ const schema = z.object({
         message: "Net sayısı dersin maksimum soru sayısını aşamaz",
       },
     ),
-  weakTopics: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -75,8 +75,8 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
       date: new Date().toISOString().split("T")[0],
       duration: 135,
       difficulty: "orta",
+      examType: "TYT",
       summary: [{ lesson: defaultLesson, net: 30 }],
-      weakTopics: "",
     }),
     [defaultLesson],
   );
@@ -85,6 +85,7 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -100,15 +101,40 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
     name: "summary",
   });
 
+  const examType = watch("examType");
+
+  const TYT_EXAM_LESSONS: LessonType[] = [
+    "Türkçe",
+    "Matematik",
+    "Fizik",
+    "Kimya",
+    "Biyoloji",
+    "Tarih",
+    "Coğrafya",
+    "Felsefe",
+    "Din Kültürü",
+  ];
+
+  const lessonOptions = useMemo<LessonType[]>(() => {
+    if (examType === "TYT") {
+      return TYT_EXAM_LESSONS;
+    }
+    // Diğer tiplerde mevcut grup listesini düzleştir
+    return Array.from(new Set(lessonGroups.flatMap((g) => g.lessons)));
+  }, [examType, lessonGroups]);
+
   const onSubmit = (data: FormValues) => {
-    const weakTopics = data.weakTopics
-      ?.split(",")
-      .map((topic) => topic.trim())
-      .filter(Boolean);
+    const summary = data.summary.map(({ lesson, net }) => ({
+      lesson: examType === "TYT" && lesson === "Geometri" ? ("Matematik" as LessonType) : lesson,
+      net,
+      correct: 0,
+      wrong: 0,
+      empty: 0,
+    }));
     addMockExam({
       id: createId(),
       ...data,
-      weakTopics,
+      summary,
     });
     reset();
   };
@@ -134,7 +160,7 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
         </div>
         <button
           type="button"
-          onClick={() => append({ lesson: defaultLesson, net: 0 })}
+          onClick={() => append({ lesson: (examType === "TYT" ? ("Matematik" as LessonType) : defaultLesson), net: 0 })}
           className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
         >
           <PlusCircle className="h-4 w-4" /> Ders ekle
@@ -162,7 +188,7 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
             />
           </label>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
             Süre (dk)
             <input
@@ -170,6 +196,17 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
               className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-900"
               {...register("duration", { valueAsNumber: true })}
             />
+          </label>
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            Tür
+            <select
+              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-900"
+              {...register("examType")}
+            >
+              <option value="TYT">TYT</option>
+              <option value="AYT">AYT</option>
+              <option value="Ders">Ders</option>
+            </select>
           </label>
           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
             Zorluk
@@ -183,14 +220,6 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
-            Zayıf Konular
-            <input
-              placeholder="Virgülle ayır"
-              className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-900"
-              {...register("weakTopics")}
-            />
           </label>
         </div>
 
@@ -209,15 +238,21 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
                   className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900"
                   {...register(`summary.${index}.lesson` as const)}
                 >
-                  {lessonGroups.map((group) => (
-                    <optgroup key={group.label} label={group.label}>
-                      {group.lessons.map((lesson) => (
+                  {examType === "TYT"
+                    ? lessonOptions.map((lesson) => (
                         <option key={lesson} value={lesson}>
                           {lesson}
                         </option>
+                      ))
+                    : lessonGroups.map((group) => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.lessons.map((lesson) => (
+                            <option key={lesson} value={lesson}>
+                              {lesson}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
-                    </optgroup>
-                  ))}
                 </select>
               </label>
               <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
