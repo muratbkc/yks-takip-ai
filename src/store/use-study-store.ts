@@ -144,20 +144,31 @@ export const useStudyStore = create<StudyState>()(
 
       initializeFromSupabase: async () => {
         const { userId, isInitialized } = get();
-        if (!userId || isInitialized) return;
+        if (!userId) {
+          console.log('userId yok, initialize edilemiyor');
+          set({ isInitialized: true });
+          return;
+        }
+        
+        if (isInitialized) {
+          console.log('Zaten initialize edilmiş');
+          return;
+        }
 
         const supabase = createClient();
 
         try {
+          console.log('Supabase verileri çekiliyor...');
+          
           // Tüm verileri paralel olarak çek
           const [
-            { data: studyEntries },
-            { data: mockExamsRaw },
-            { data: goals },
-            { data: topics },
-            { data: notifications },
-            { data: widgets },
-            { data: profileRow },
+            { data: studyEntries, error: entriesError },
+            { data: mockExamsRaw, error: examsError },
+            { data: goals, error: goalsError },
+            { data: topics, error: topicsError },
+            { data: notifications, error: notifsError },
+            { data: widgets, error: widgetsError },
+            { data: profileRow, error: profileError },
           ] = await Promise.all([
             supabase
               .from("study_entries")
@@ -185,99 +196,168 @@ export const useStudyStore = create<StudyState>()(
               .eq("id", userId)
               .maybeSingle(),
           ]);
+          
+          // Hataları logla ama devam et
+          if (entriesError) console.error('Study entries hatası:', entriesError);
+          if (examsError) console.error('Mock exams hatası:', examsError);
+          if (goalsError) console.error('Goals hatası:', goalsError);
+          if (topicsError) console.error('Topics hatası:', topicsError);
+          if (notifsError) console.error('Notifications hatası:', notifsError);
+          if (widgetsError) console.error('Widgets hatası:', widgetsError);
+          if (profileError) console.error('Profile hatası:', profileError);
+
+          // Güvenli tarih parsing fonksiyonu
+          const normalizeDate = (dateStr: any) => {
+            try {
+              if (!dateStr) return new Date().toISOString().split('T')[0];
+              const str = String(dateStr);
+              return str.includes('T') ? str.split('T')[0] : str;
+            } catch (e) {
+              console.error('Tarih parsing hatası:', e);
+              return new Date().toISOString().split('T')[0];
+            }
+          };
 
           // Mock exam details'i ayrı çek ve birleştir
           const mockExams = await Promise.all(
             (mockExamsRaw || []).map(async (exam) => {
-              const { data: details } = await supabase
-                .from("mock_exam_details")
-                .select("*")
-                .eq("exam_id", exam.id);
+              try {
+                const { data: details } = await supabase
+                  .from("mock_exam_details")
+                  .select("*")
+                  .eq("exam_id", exam.id);
 
-              // Güvenli tarih parsing
-              const normalizeDate = (dateStr: string) => {
-                if (!dateStr) return new Date().toISOString().split('T')[0];
-                return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-              };
-
-              return {
-                id: exam.id,
-                title: exam.title || 'Deneme',
-                date: normalizeDate(exam.date),
-                examType: exam.exam_type || 'TYT',
-                duration: exam.duration ?? 0,
-                difficulty: exam.difficulty || 'orta',
-                summary: details?.map((d) => ({
-                  lesson: d.lesson,
-                  correct: d.correct ?? 0,
-                  wrong: d.wrong ?? 0,
-                  empty: d.empty ?? 0,
-                  net: d.net ?? 0,
-                })) || [],
-              };
+                return {
+                  id: exam.id || `exam-${Date.now()}`,
+                  title: exam.title || 'Deneme',
+                  date: normalizeDate(exam.date),
+                  examType: exam.exam_type || 'TYT',
+                  duration: exam.duration ?? 0,
+                  difficulty: exam.difficulty || 'orta',
+                  summary: (details || []).map((d) => ({
+                    lesson: d.lesson || '',
+                    correct: d.correct ?? 0,
+                    wrong: d.wrong ?? 0,
+                    empty: d.empty ?? 0,
+                    net: d.net ?? 0,
+                  })),
+                };
+              } catch (error) {
+                console.error('Mock exam parsing hatası:', error);
+                return {
+                  id: exam.id || `exam-${Date.now()}`,
+                  title: exam.title || 'Deneme',
+                  date: normalizeDate(exam.date),
+                  examType: 'TYT',
+                  duration: 0,
+                  difficulty: 'orta',
+                  summary: [],
+                };
+              }
             })
           );
 
-          // Güvenli tarih parsing fonksiyonu
-          const normalizeDate = (dateStr: string) => {
-            if (!dateStr) return new Date().toISOString().split('T')[0];
-            return dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-          };
-
           set({
-            studyEntries: studyEntries?.map((entry) => ({
-              id: entry.id,
-              date: normalizeDate(entry.date),
-              lesson: entry.lesson || '',
-              subTopic: entry.sub_topic || '',
-              minutes: entry.minutes ?? 0,
-              questionCount: entry.question_count ?? 0,
-              notes: entry.notes || '',
-              studyType: entry.study_type || 'konu-calisma',
-              timeSlot: entry.time_slot || 'sabah',
-              net: {
-                tyt: entry.tyt_net ?? null,
-                ayt: entry.ayt_net ?? null,
-              },
-            })) || [],
+            studyEntries: (studyEntries || []).map((entry) => {
+              try {
+                return {
+                  id: entry.id || `entry-${Date.now()}`,
+                  date: normalizeDate(entry.date),
+                  lesson: entry.lesson || '',
+                  subTopic: entry.sub_topic || '',
+                  minutes: entry.minutes ?? 0,
+                  questionCount: entry.question_count ?? 0,
+                  notes: entry.notes || '',
+                  studyType: entry.study_type || 'konu-calisma',
+                  timeSlot: entry.time_slot || 'sabah',
+                  net: {
+                    tyt: entry.tyt_net ?? null,
+                    ayt: entry.ayt_net ?? null,
+                  },
+                };
+              } catch (e) {
+                console.error('Entry parsing hatası:', e);
+                return null;
+              }
+            }).filter(Boolean),
             mockExams: mockExams || [],
-            goals: goals?.map((goal) => ({
-              id: goal.id,
-              title: goal.title,
-              target: Number(goal.target),
-              current: Number(goal.current),
-              unit: goal.unit,
-              period: goal.period,
-            })) || [],
-            topics: topics?.map((topic) => ({
-              id: topic.id,
-              lesson: topic.lesson,
-              completed: topic.completed,
-              total: topic.total,
-              missingTopics: topic.missing_topics,
-            })) || [],
-            notifications: notifications?.map((notif) => ({
-              id: notif.id,
-              title: notif.title,
-              description: notif.description,
-              type: notif.type,
-              createdAt: notif.created_at,
-              read: notif.read,
-            })) || [],
-            widgets: widgets?.map((widget) => ({
-              id: widget.id,
-              title: widget.title,
-              description: widget.description,
-              component: widget.component,
-              visible: widget.visible,
-              size: widget.size,
-            })) || initialWidgets,
+            goals: (goals || []).map((goal) => {
+              try {
+                return {
+                  id: goal.id || `goal-${Date.now()}`,
+                  title: goal.title || '',
+                  target: Number(goal.target) || 0,
+                  current: Number(goal.current) || 0,
+                  unit: goal.unit || '',
+                  period: goal.period || 'haftalik',
+                };
+              } catch (e) {
+                console.error('Goal parsing hatası:', e);
+                return null;
+              }
+            }).filter(Boolean),
+            topics: (topics || []).map((topic) => {
+              try {
+                return {
+                  id: topic.id || `topic-${Date.now()}`,
+                  lesson: topic.lesson || '',
+                  completed: topic.completed ?? 0,
+                  total: topic.total ?? 0,
+                  missingTopics: topic.missing_topics || [],
+                };
+              } catch (e) {
+                console.error('Topic parsing hatası:', e);
+                return null;
+              }
+            }).filter(Boolean),
+            notifications: (notifications || []).map((notif) => {
+              try {
+                return {
+                  id: notif.id || `notif-${Date.now()}`,
+                  title: notif.title || '',
+                  description: notif.description || '',
+                  type: notif.type || 'info',
+                  createdAt: notif.created_at || new Date().toISOString(),
+                  read: notif.read ?? false,
+                };
+              } catch (e) {
+                console.error('Notification parsing hatası:', e);
+                return null;
+              }
+            }).filter(Boolean),
+            widgets: (widgets || initialWidgets).map((widget) => {
+              try {
+                return {
+                  id: widget.id || `widget-${Date.now()}`,
+                  title: widget.title || '',
+                  description: widget.description || '',
+                  component: widget.component || '',
+                  visible: widget.visible ?? true,
+                  size: widget.size || 'medium',
+                };
+              } catch (e) {
+                console.error('Widget parsing hatası:', e);
+                return null;
+              }
+            }).filter(Boolean),
             profile: profileRow ? mapProfileRow(profileRow) : null,
             isInitialized: true,
           });
+          
+          console.log('✅ Supabase verileri başarıyla yüklendi');
         } catch (error) {
-          console.error("Supabase'den veri çekilemedi:", error);
-          set({ isInitialized: true });
+          console.error("❌ Supabase'den veri çekilemedi:", error);
+          // Hata olsa bile default değerlerle devam et
+          set({ 
+            studyEntries: [],
+            mockExams: [],
+            goals: [],
+            topics: [],
+            notifications: [],
+            widgets: initialWidgets,
+            profile: null,
+            isInitialized: true 
+          });
         }
       },
 

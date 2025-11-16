@@ -32,24 +32,53 @@ export default function Page() {
   const isInitialized = useStudyStore((state) => state.isInitialized);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeForm, setActiveForm] = useState<"daily" | "mock">("daily");
 
   useEffect(() => {
     const checkUser = async () => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (!user) {
-        router.push("/auth/login");
-      } else {
+        if (!user) {
+          router.push("/auth/login");
+        } else {
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error('Kullanıcı kontrolü hatası:', err);
+        setError('Bir hata oluştu. Lütfen sayfayı yenileyin.');
         setIsLoading(false);
       }
     };
 
     checkUser();
   }, [router]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-center max-w-md px-4">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+            Bir Hata Oluştu
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            {error}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Sayfayı Yenile
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !isInitialized) {
     return (
