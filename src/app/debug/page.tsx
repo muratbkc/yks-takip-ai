@@ -1,145 +1,153 @@
 "use client";
 
-import { useStudyStore } from "@/store/use-study-store";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export default function DebugPage() {
   const [logs, setLogs] = useState<string[]>([]);
-  const [user, setUser] = useState<any>(null);
-  const store = useStudyStore();
-
-  const addLog = (msg: string) => {
-    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
-  };
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const checkEverything = async () => {
+    setMounted(true);
+    
+    const addLog = (msg: string) => {
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+      console.log(msg);
+    };
+
+    const runDiagnostics = async () => {
       try {
         addLog("🔍 Debug başlatıldı");
-        
-        // 1. User kontrolü
-        const supabase = createClient();
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          addLog(`❌ User Error: ${userError.message}`);
-        } else if (user) {
-          addLog(`✅ User ID: ${user.id}`);
-          setUser(user);
+
+        // 1. Window kontrolü
+        if (typeof window !== 'undefined') {
+          addLog("✅ Window object var");
         } else {
-          addLog("❌ User yok");
+          addLog("❌ Window object yok");
+          return;
         }
 
-        // 2. Store durumu
-        addLog(`Store isInitialized: ${store.isInitialized}`);
-        addLog(`Store userId: ${store.userId || 'null'}`);
-        addLog(`Store profile: ${store.profile ? 'var' : 'yok'}`);
-        addLog(`Study Entries: ${store.studyEntries.length}`);
-        addLog(`Mock Exams: ${store.mockExams.length}`);
-
-        // 3. LocalStorage kontrolü
-        const localData = localStorage.getItem('yks-tracker-store');
-        if (localData) {
-          addLog(`✅ LocalStorage boyutu: ${(localData.length / 1024).toFixed(2)} KB`);
-          try {
-            const parsed = JSON.parse(localData);
-            addLog(`LocalStorage state keys: ${Object.keys(parsed.state || {}).join(', ')}`);
-          } catch (e) {
-            addLog(`❌ LocalStorage parse hatası: ${e}`);
-          }
-        } else {
-          addLog("❌ LocalStorage'da veri yok");
-        }
-
-        // 4. Supabase bağlantı testi
+        // 2. LocalStorage kontrolü
         try {
+          const testKey = '__test__';
+          localStorage.setItem(testKey, 'test');
+          localStorage.removeItem(testKey);
+          addLog("✅ LocalStorage çalışıyor");
+
+          const storeData = localStorage.getItem('yks-tracker-store');
+          if (storeData) {
+            addLog(`✅ Store verisi var: ${(storeData.length / 1024).toFixed(2)} KB`);
+          } else {
+            addLog("⚠️ Store verisi yok");
+          }
+        } catch (e: any) {
+          addLog(`❌ LocalStorage hatası: ${e.message}`);
+        }
+
+        // 3. Dinamik Supabase import
+        try {
+          addLog("🔄 Supabase import ediliyor...");
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+          addLog("✅ Supabase client oluşturuldu");
+
+          // 4. User kontrolü
+          const { data: { user }, error: userError } = await supabase.auth.getUser();
+          
+          if (userError) {
+            addLog(`❌ User Error: ${userError.message}`);
+          } else if (user) {
+            addLog(`✅ User ID: ${user.id}`);
+            addLog(`✅ User Email: ${user.email}`);
+          } else {
+            addLog("⚠️ Kullanıcı giriş yapmamış");
+          }
+
+          // 5. Database bağlantı testi
           const { data, error } = await supabase
             .from('profiles')
-            .select('id')
+            .select('count')
             .limit(1);
           
           if (error) {
-            addLog(`❌ Supabase bağlantı hatası: ${error.message}`);
+            addLog(`❌ DB Bağlantı hatası: ${error.message}`);
           } else {
-            addLog(`✅ Supabase bağlantısı başarılı`);
+            addLog("✅ Database bağlantısı başarılı");
           }
+
         } catch (e: any) {
-          addLog(`❌ Supabase test hatası: ${e.message}`);
+          addLog(`❌ Supabase hatası: ${e.message}`);
+          if (e.stack) {
+            addLog(`Stack: ${e.stack.substring(0, 200)}`);
+          }
+        }
+
+        // 6. Store kontrolü
+        try {
+          addLog("🔄 Store import ediliyor...");
+          const { useStudyStore } = await import("@/store/use-study-store");
+          const store = useStudyStore.getState();
+          
+          addLog(`Store isInitialized: ${store.isInitialized}`);
+          addLog(`Store userId: ${store.userId || 'null'}`);
+          addLog(`Store profile: ${store.profile ? 'var' : 'yok'}`);
+          addLog(`Study Entries: ${store.studyEntries?.length || 0}`);
+          addLog(`Mock Exams: ${store.mockExams?.length || 0}`);
+        } catch (e: any) {
+          addLog(`❌ Store hatası: ${e.message}`);
+          if (e.stack) {
+            addLog(`Stack: ${e.stack.substring(0, 200)}`);
+          }
         }
 
       } catch (error: any) {
         addLog(`❌ Genel hata: ${error.message}`);
-        console.error(error);
+        if (error.stack) {
+          addLog(`Stack: ${error.stack.substring(0, 200)}`);
+        }
       }
     };
 
-    checkEverything();
-
-    // Console logları yakala
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-
-    console.log = (...args) => {
-      originalLog(...args);
-      addLog(`LOG: ${args.join(' ')}`);
-    };
-
-    console.error = (...args) => {
-      originalError(...args);
-      addLog(`ERROR: ${args.join(' ')}`);
-    };
-
-    console.warn = (...args) => {
-      originalWarn(...args);
-      addLog(`WARN: ${args.join(' ')}`);
-    };
-
-    return () => {
-      console.log = originalLog;
-      console.error = originalError;
-      console.warn = originalWarn;
-    };
+    runDiagnostics();
   }, []);
 
-  const clearLocalStorage = () => {
-    localStorage.clear();
-    addLog("✅ LocalStorage temizlendi");
-    addLog("🔄 Sayfayı yenileyin");
-  };
-
-  const forceReinitialize = async () => {
-    addLog("🔄 Force reinitialize başlatılıyor...");
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      store.setUserId(null);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      store.setUserId(user.id);
-      await store.initializeFromSupabase();
-      addLog("✅ Reinitialize tamamlandı");
+  const clearStorage = () => {
+    try {
+      localStorage.clear();
+      setLogs(prev => [...prev, "✅ LocalStorage temizlendi - Sayfayı yenileyin"]);
+    } catch (e: any) {
+      setLogs(prev => [...prev, `❌ Temizleme hatası: ${e.message}`]);
     }
   };
+
+  const reloadPage = () => {
+    window.location.reload();
+  };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <div>Yükleniyor...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">🐛 Debug Panel</h1>
         
-        <div className="mb-4 space-x-2">
+        <div className="mb-4 space-x-2 flex flex-wrap gap-2">
           <button
-            onClick={clearLocalStorage}
+            onClick={clearStorage}
             className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
           >
             🗑️ LocalStorage Temizle
           </button>
           <button
-            onClick={forceReinitialize}
+            onClick={reloadPage}
             className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
           >
-            🔄 Force Reinitialize
+            🔄 Yenile
           </button>
           <button
             onClick={() => window.location.href = '/'}
@@ -147,40 +155,46 @@ export default function DebugPage() {
           >
             🏠 Ana Sayfa
           </button>
-        </div>
-
-        {user && (
-          <div className="bg-slate-800 p-4 rounded mb-4">
-            <h2 className="font-bold mb-2">👤 User Info:</h2>
-            <pre className="text-xs overflow-auto">
-              {JSON.stringify(user, null, 2)}
-            </pre>
-          </div>
-        )}
-
-        <div className="bg-slate-800 p-4 rounded mb-4">
-          <h2 className="font-bold mb-2">📊 Store State:</h2>
-          <div className="text-sm space-y-1">
-            <div>isInitialized: <span className={store.isInitialized ? "text-green-400" : "text-red-400"}>{String(store.isInitialized)}</span></div>
-            <div>userId: {store.userId || 'null'}</div>
-            <div>profile: {store.profile ? '✅' : '❌'}</div>
-            <div>studyEntries: {store.studyEntries.length}</div>
-            <div>mockExams: {store.mockExams.length}</div>
-            <div>goals: {store.goals.length}</div>
-            <div>topics: {store.topics.length}</div>
-            <div>widgets: {store.widgets.length}</div>
-          </div>
+          <button
+            onClick={() => window.location.href = '/auth/login'}
+            className="px-4 py-2 bg-purple-600 rounded hover:bg-purple-700"
+          >
+            🔑 Login
+          </button>
         </div>
 
         <div className="bg-slate-800 p-4 rounded">
-          <h2 className="font-bold mb-2">📝 Logs:</h2>
-          <div className="space-y-1 text-xs font-mono max-h-96 overflow-auto">
-            {logs.map((log, i) => (
-              <div key={i} className="border-b border-slate-700 pb-1">
-                {log}
-              </div>
-            ))}
-          </div>
+          <h2 className="font-bold mb-2">📝 Diagnostic Logs:</h2>
+          {logs.length === 0 ? (
+            <div className="text-slate-400">Loglar yükleniyor...</div>
+          ) : (
+            <div className="space-y-1 text-sm font-mono max-h-[70vh] overflow-auto">
+              {logs.map((log, i) => (
+                <div 
+                  key={i} 
+                  className={`border-b border-slate-700 pb-1 ${
+                    log.includes('❌') ? 'text-red-400' : 
+                    log.includes('✅') ? 'text-green-400' : 
+                    log.includes('⚠️') ? 'text-yellow-400' : 
+                    'text-slate-300'
+                  }`}
+                >
+                  {log}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 bg-slate-800 p-4 rounded text-sm">
+          <h3 className="font-bold mb-2">📱 Nasıl Kullanılır:</h3>
+          <ol className="list-decimal list-inside space-y-1 text-slate-300">
+            <li>Yukarıdaki logları ekran görüntüsü ile kaydet</li>
+            <li>Kırmızı (❌) olan satırları not et - bunlar hatalar</li>
+            <li>"LocalStorage Temizle" butonuna bas</li>
+            <li>"Yenile" butonuna bas</li>
+            <li>Hala sorun varsa, login sayfasına git</li>
+          </ol>
         </div>
       </div>
     </div>
