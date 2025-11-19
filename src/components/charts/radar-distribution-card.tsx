@@ -32,17 +32,17 @@ export function LessonRadarCard({ entries }: LessonRadarProps) {
   // Zamana göre filtrele
   const filteredEntries = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    
+
     if (timeFilter === "week") {
       const weekAgo = subDays(new Date(), 7).toISOString().split('T')[0];
       return entries.filter(e => e.date >= weekAgo && e.date <= today);
     }
-    
+
     if (timeFilter === "month") {
       const monthAgo = subDays(new Date(), 30).toISOString().split('T')[0];
       return entries.filter(e => e.date >= monthAgo && e.date <= today);
     }
-    
+
     return entries; // all
   }, [entries, timeFilter]);
 
@@ -84,8 +84,8 @@ export function LessonRadarCard({ entries }: LessonRadarProps) {
         <ResponsiveContainer>
           <RadarChart data={distribution} style={{ backgroundColor: 'transparent' }}>
             <PolarGrid stroke="var(--chart-grid)" />
-            <PolarAngleAxis 
-              dataKey="lesson" 
+            <PolarAngleAxis
+              dataKey="lesson"
               tick={chartSecondaryTick}
             />
             <Tooltip

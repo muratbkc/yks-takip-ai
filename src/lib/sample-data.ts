@@ -1,4 +1,5 @@
 import { addDays, formatISO, subDays } from "date-fns";
+import { generateSafeId } from "@/lib/safe-random-id";
 import type {
   Goal,
   MockExam,
@@ -16,7 +17,7 @@ const createStudyEntry = (
 ): StudyEntry => {
   const date = subDays(today, offset);
   return {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     date: formatISO(date, { representation: "date" }),
     lesson: "Matematik",
     minutes: 120,
@@ -213,7 +214,7 @@ export const initialStudyEntries: StudyEntry[] = [
 export const initialMockExams: MockExam[] = [
   // Son 2 haftadaki denemeler (gelişim trendi göstermek için)
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "TYT Deneme 15",
     date: formatISO(subDays(today, 1), { representation: "date" }), // Dün
     duration: 165,
@@ -232,7 +233,7 @@ export const initialMockExams: MockExam[] = [
     weakTopics: ["Matematik - Fonksiyonlar", "Fizik - Elektrik"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "AYT Sayısal 8",
     date: formatISO(subDays(today, 5), { representation: "date" }), // 5 gün önce
     duration: 180,
@@ -246,7 +247,7 @@ export const initialMockExams: MockExam[] = [
     weakTopics: ["AYT Fizik - Dalgalar", "AYT Kimya - Organik"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "TYT Deneme 14",
     date: formatISO(subDays(today, 8), { representation: "date" }), // 8 gün önce
     duration: 165,
@@ -265,7 +266,7 @@ export const initialMockExams: MockExam[] = [
     weakTopics: ["Türkçe - Paragraf Yorumu", "Matematik - Geometri"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "AYT Sayısal 7",
     date: formatISO(subDays(today, 12), { representation: "date" }), // 12 gün önce
     duration: 180,
@@ -279,7 +280,7 @@ export const initialMockExams: MockExam[] = [
     weakTopics: ["AYT Matematik - İntegral", "AYT Fizik - Modern Fizik"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "TYT Deneme 13",
     date: formatISO(subDays(today, 15), { representation: "date" }), // 15 gün önce
     duration: 165,
@@ -301,7 +302,7 @@ export const initialMockExams: MockExam[] = [
 
 export const initialGoals: Goal[] = [
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "Günlük 150 soru",
     period: "günlük",
     target: 150,
@@ -309,7 +310,7 @@ export const initialGoals: Goal[] = [
     unit: "soru",
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "Günlük 5 saat",
     period: "günlük",
     target: 300,
@@ -317,7 +318,7 @@ export const initialGoals: Goal[] = [
     unit: "dk",
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "Haftada 2 deneme",
     period: "haftalık",
     target: 2,
@@ -325,7 +326,7 @@ export const initialGoals: Goal[] = [
     unit: "deneme",
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "Haftalık 1200 soru",
     period: "haftalık",
     target: 1200,
@@ -336,42 +337,42 @@ export const initialGoals: Goal[] = [
 
 export const initialTopicProgress: TopicProgress[] = [
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     lesson: "Matematik",
     completed: 35,
     total: 40,
     missingTopics: ["Olasılık", "Seriler", "İstatistik", "Diziler", "Karmaşık Sayılar"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     lesson: "AYT Matematik",
     completed: 21,
     total: 28,
     missingTopics: ["İntegral Uygulamaları", "L'Hospital", "Parametre", "Seriler", "İkinci Dereceden Denklemler", "Logaritma İleri", "İntegral Hacim"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     lesson: "AYT Fizik",
     completed: 12,
     total: 18,
     missingTopics: ["Modern Fizik", "Atom Fiziği", "Fotoelektrik Olay", "Kuantum", "Radyoaktivite", "Nükleer Fizik"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     lesson: "Fizik",
     completed: 14,
     total: 16,
     missingTopics: ["Basınç İleri", "Hidrostatik"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     lesson: "AYT Kimya",
     completed: 16,
     total: 20,
     missingTopics: ["Organik - Esterler", "Organik - Eterler", "Elektrokimya İleri", "Kimyasal Denge"],
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     lesson: "AYT Biyoloji",
     completed: 10,
     total: 15,
@@ -381,7 +382,7 @@ export const initialTopicProgress: TopicProgress[] = [
 
 export const initialNotifications: NotificationItem[] = [
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "🎉 Haftalık deneme hedefine ulaştın!",
     description:
       "Bu hafta 2 deneme hedefini tamamladın. Netlerinde artış var, harika gidiyorsun!",
@@ -389,7 +390,7 @@ export const initialNotifications: NotificationItem[] = [
     createdAt: new Date().toISOString(),
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "⚠️ Tarih ve Coğrafya ihmal ediliyor",
     description:
       "Son 3 günde bu derslere hiç çalışmadın. 40 dk + 30 soru öneririm.",
@@ -397,7 +398,7 @@ export const initialNotifications: NotificationItem[] = [
     createdAt: addDays(new Date(), -1).toISOString(),
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "📈 TYT netlerinde artış var!",
     description:
       "Son deneme: 89 net (önceki: 81 net). Matematik ve Türkçe'de çok iyi gidiyorsun.",
@@ -405,7 +406,7 @@ export const initialNotifications: NotificationItem[] = [
     createdAt: addDays(new Date(), -1).toISOString(),
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "💡 AYT Fizik'te Modern Fizik eksik",
     description:
       "6 eksik konu var. Haftaya deneme için bu konuları tamamlamalısın.",
@@ -413,7 +414,7 @@ export const initialNotifications: NotificationItem[] = [
     createdAt: addDays(new Date(), -2).toISOString(),
   },
   {
-    id: crypto.randomUUID(),
+    id: generateSafeId(),
     title: "🔥 Bu hafta 1545 dakika çalıştın!",
     description:
       "Bu hafta toplam 25 saat 45 dakika çalışma yaptın. Harika bir tempo!",

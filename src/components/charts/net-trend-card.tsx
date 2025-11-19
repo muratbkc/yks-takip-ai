@@ -84,20 +84,20 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
   // Aktif sekmeye göre sınavları filtrele
   const filteredExams = useMemo(() => {
     const examsByType = exams.filter(exam => exam.examType === activeTab);
-    
+
     // Zamana göre filtrele
     const today = new Date().toISOString().split('T')[0];
-    
+
     if (timeFilter === "week") {
       const weekAgo = subDays(new Date(), 7).toISOString().split('T')[0];
       return examsByType.filter(e => e.date >= weekAgo && e.date <= today);
     }
-    
+
     if (timeFilter === "month") {
       const monthAgo = subDays(new Date(), 30).toISOString().split('T')[0];
       return examsByType.filter(e => e.date >= monthAgo && e.date <= today);
     }
-    
+
     return examsByType; // all
   }, [exams, activeTab, timeFilter]);
 
@@ -112,13 +112,24 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
       return filteredExams
         .map(exam => {
           const totalNet = exam.summary.reduce((acc, item) => acc + item.net, 0);
+          let dateLabel = "";
+          try {
+            const d = new Date(exam.date);
+            if (!isNaN(d.getTime())) {
+              dateLabel = d.toLocaleDateString("tr-TR", {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              });
+            } else {
+              dateLabel = "Geçersiz Tarih";
+            }
+          } catch {
+            dateLabel = "Hata";
+          }
           return {
             date: exam.date,
-            dateLabel: new Date(exam.date).toLocaleDateString("tr-TR", {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            }),
+            dateLabel,
             net: parseFloat(totalNet.toFixed(1)),
             rawDate: exam.date,
           };
@@ -137,13 +148,25 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
       // Tüm dersler: Her ders için ayrı çizgi
       return filteredExams
         .map((exam): LessonSeriesPoint => {
+          let dateLabel = "";
+          try {
+            const d = new Date(exam.date);
+            if (!isNaN(d.getTime())) {
+              dateLabel = d.toLocaleDateString("tr-TR", {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              });
+            } else {
+              dateLabel = "Geçersiz Tarih";
+            }
+          } catch {
+            dateLabel = "Hata";
+          }
+
           const dataPoint: LessonSeriesPoint = {
             date: exam.date,
-            dateLabel: new Date(exam.date).toLocaleDateString("tr-TR", {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            }),
+            dateLabel,
             rawDate: exam.date,
           };
 
@@ -162,17 +185,31 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
       return filteredExams
         .map(exam => {
           const lessonResult = exam.summary.find(item => item.lesson === lessonForChart);
-          return lessonResult ? {
+          if (!lessonResult) return null;
+          
+          let dateLabel = "";
+          try {
+            const d = new Date(exam.date);
+            if (!isNaN(d.getTime())) {
+              dateLabel = d.toLocaleDateString("tr-TR", {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              });
+            } else {
+              dateLabel = "Geçersiz Tarih";
+            }
+          } catch {
+            dateLabel = "Hata";
+          }
+
+          return {
             date: exam.date,
-            dateLabel: new Date(exam.date).toLocaleDateString("tr-TR", {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            }),
+            dateLabel,
             net: parseFloat(lessonResult.net.toFixed(1)),
             lesson: lessonResult.lesson,
             rawDate: exam.date,
-          } : null;
+          };
         })
         .filter(Boolean)
         .sort((a, b) => a!.rawDate.localeCompare(b!.rawDate));
@@ -184,12 +221,12 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
   // Tüm Dersler görünümü için dersleri topla
   const allLessons = useMemo(() => {
     if (view !== "all-lessons" || !filteredExams || filteredExams.length === 0) return [];
-    
+
     const lessonSet = new Set<string>();
     filteredExams.forEach(exam => {
       exam.summary.forEach(item => lessonSet.add(item.lesson));
     });
-    
+
     return Array.from(lessonSet).sort();
   }, [filteredExams, view]);
 
@@ -230,46 +267,43 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
                   : `• ${normalizedLesson || 'Ders'}`}
             </h3>
           </div>
-          
+
           {/* Görünüm Seçimi */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 rounded-full bg-slate-100 p-1 dark:bg-slate-800">
               <button
                 onClick={() => setView("overall")}
-                className={`rounded-full px-2 py-1 text-xs font-medium transition ${
-                  view === "overall"
+                className={`rounded-full px-2 py-1 text-xs font-medium transition ${view === "overall"
                     ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                     : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                }`}
+                  }`}
               >
                 Genel
               </button>
               <button
                 onClick={() => setView("all-lessons")}
-                className={`rounded-full px-2 py-1 text-xs font-medium transition ${
-                  view === "all-lessons"
+                className={`rounded-full px-2 py-1 text-xs font-medium transition ${view === "all-lessons"
                     ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                     : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                }`}
+                  }`}
               >
                 Tüm Dersler
               </button>
               <button
                 onClick={() => setView("lesson")}
-                className={`rounded-full px-2 py-1 text-xs font-medium transition ${
-                  view === "lesson"
+                className={`rounded-full px-2 py-1 text-xs font-medium transition ${view === "lesson"
                     ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                     : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                }`}
+                  }`}
               >
                 Tek Ders
               </button>
             </div>
-            
+
             {view === 'lesson' && (
               currentLessonOptions.length > 0 ? (
-                <select 
-                  value={normalizedLesson || ''} 
+                <select
+                  value={normalizedLesson || ''}
                   onChange={e => setSelectedLesson(e.target.value as LessonType)}
                   className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                 >
@@ -295,21 +329,19 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab("TYT")}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                activeTab === "TYT"
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTab === "TYT"
                   ? "bg-violet-500 text-white shadow-md dark:bg-violet-600"
                   : "bg-white/70 text-slate-600 shadow-inner hover:bg-white dark:bg-slate-900/60 dark:text-slate-300"
-              }`}
+                }`}
             >
               TYT
             </button>
             <button
               onClick={() => setActiveTab("AYT")}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                activeTab === "AYT"
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTab === "AYT"
                   ? "bg-emerald-500 text-white shadow-md dark:bg-emerald-600"
                   : "bg-white/70 text-slate-600 shadow-inner hover:bg-white dark:bg-slate-900/60 dark:text-slate-300"
-              }`}
+                }`}
             >
               AYT
             </button>
@@ -362,30 +394,30 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
         ) : view === "all-lessons" ? (
           // Tüm Dersler görünümü - Her ders için ayrı çizgi
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={chartData} 
+            <LineChart
+              data={chartData}
               margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
               style={{ backgroundColor: 'transparent' }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-              <XAxis 
-                dataKey="dateLabel" 
+              <XAxis
+                dataKey="dateLabel"
                 fontSize={11}
                 tick={chartSecondaryTick}
                 tickLine={false}
                 axisLine={false}
                 height={40}
               />
-              <YAxis 
+              <YAxis
                 fontSize={12}
                 tick={chartPrimaryTick}
                 tickLine={false}
                 axisLine={false}
                 width={45}
                 domain={[0, 'auto']}
-                label={{ 
-                  value: 'Net', 
-                  angle: -90, 
+                label={{
+                  value: 'Net',
+                  angle: -90,
                   position: 'insideLeft',
                   style: { fill: 'var(--chart-axis)', fontSize: 12, fontWeight: 600 }
                 }}
@@ -395,7 +427,7 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
                 labelStyle={chartTooltipLabelStyle}
                 itemStyle={chartTooltipItemStyle}
               />
-              <Legend 
+              <Legend
                 wrapperStyle={getChartLegendStyle({ paddingTop: 10 })}
                 iconType="line"
               />
@@ -417,44 +449,44 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
         ) : (
           // Genel ve Tek Ders görünümü
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={chartData} 
+            <LineChart
+              data={chartData}
               margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
               style={{ backgroundColor: 'transparent' }}
             >
               <defs>
                 <linearGradient id={`gradient-${activeTab}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop 
-                    offset="5%" 
+                  <stop
+                    offset="5%"
                     stopColor={activeLineColor}
-                    stopOpacity={0.32} 
+                    stopOpacity={0.32}
                   />
-                  <stop 
-                    offset="95%" 
+                  <stop
+                    offset="95%"
                     stopColor={activeLineColor}
-                    stopOpacity={0.08} 
+                    stopOpacity={0.08}
                   />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-              <XAxis 
-                dataKey="dateLabel" 
+              <XAxis
+                dataKey="dateLabel"
                 fontSize={11}
                 tick={chartSecondaryTick}
                 tickLine={false}
                 axisLine={false}
                 height={40}
               />
-              <YAxis 
+              <YAxis
                 fontSize={12}
                 tick={chartPrimaryTick}
                 tickLine={false}
                 axisLine={false}
                 width={45}
                 domain={[0, 'auto']}
-                label={{ 
-                  value: 'Net', 
-                  angle: -90, 
+                label={{
+                  value: 'Net',
+                  angle: -90,
                   position: 'insideLeft',
                   style: { fill: 'var(--chart-axis)', fontSize: 12, fontWeight: 600 }
                 }}
@@ -464,22 +496,22 @@ export function NetTrendCard({ exams }: NetTrendCardProps) {
                 labelStyle={chartTooltipLabelStyle}
                 itemStyle={chartTooltipItemStyle}
               />
-              <Legend 
+              <Legend
                 wrapperStyle={getChartLegendStyle({ paddingTop: 10 })}
               />
-              <Line 
-                type="monotone" 
-                dataKey="net" 
-                name={view === 'overall' ? `${activeTab} Net` : normalizedLesson || 'Net'} 
+              <Line
+                type="monotone"
+                dataKey="net"
+                name={view === 'overall' ? `${activeTab} Net` : normalizedLesson || 'Net'}
                 stroke={activeLineColor}
                 strokeWidth={3}
-                dot={{ 
-                  fill: activeLineColor, 
+                dot={{
+                  fill: activeLineColor,
                   r: 6,
                   strokeWidth: 2,
                   stroke: '#fff'
                 }}
-                activeDot={{ 
+                activeDot={{
                   r: 8,
                   strokeWidth: 3,
                   stroke: '#fff'

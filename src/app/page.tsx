@@ -24,12 +24,18 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useStore } from "@/hooks/use-store";
 
 export default function Page() {
-  const studyEntries = useStudyStore((state) => state.studyEntries);
-  const mockExams = useStudyStore((state) => state.mockExams);
-  const profile = useStudyStore((state) => state.profile);
-  const isInitialized = useStudyStore((state) => state.isInitialized);
+  console.log("Page component rendering - Mobile check"); // Debug log
+  const rawStudyEntries = useStore(useStudyStore, (state) => state.studyEntries);
+  const studyEntries = Array.isArray(rawStudyEntries) ? rawStudyEntries : [];
+  
+  const rawMockExams = useStore(useStudyStore, (state) => state.mockExams);
+  const mockExams = Array.isArray(rawMockExams) ? rawMockExams : [];
+
+  const profile = useStore(useStudyStore, (state) => state.profile);
+  const isInitialized = useStore(useStudyStore, (state) => state.isInitialized) ?? false;
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +109,7 @@ export default function Page() {
         <Header />
         <CountdownTimer target="2026-06-20T10:00:00" />
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 h-auto md:grid-cols-4">
             <TabsTrigger value="dashboard">Pano</TabsTrigger>
             <TabsTrigger value="entry">Veri Girişi</TabsTrigger>
             <TabsTrigger value="tools">Araçlar</TabsTrigger>

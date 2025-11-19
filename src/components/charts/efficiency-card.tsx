@@ -23,7 +23,7 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
   const lastSeven = efficiency.slice(-7);
   const avgEfficiency =
     lastSeven.reduce((sum, day) => sum + day.efficiency, 0) /
-      (lastSeven.length || 1) || 0;
+    (lastSeven.length || 1) || 0;
   const latest = efficiency.at(-1)?.efficiency ?? 0;
   const targetEfficiency = 0.45;
   const percent = Math.min(Math.round((avgEfficiency / targetEfficiency) * 100), 120);
@@ -53,8 +53,8 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
     date === "-"
       ? "-"
       : new Date(date).toLocaleDateString("tr-TR", {
-          weekday: "short",
-        });
+        weekday: "short",
+      });
 
   return (
     <div className="chart-card space-y-4">
@@ -86,7 +86,7 @@ export function EfficiencyCard({ entries }: EfficiencyCardProps) {
                 endAngle={450}
                 style={{ backgroundColor: 'transparent' }}
               >
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number) => `${value}%`}
                   contentStyle={chartTooltipStyle}
                   labelStyle={chartTooltipLabelStyle}

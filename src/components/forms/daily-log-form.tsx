@@ -303,7 +303,7 @@ export function DailyLogForm() {
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
                                 Çalıştığın Dersler ({lessonFields.length})
                                 </p>

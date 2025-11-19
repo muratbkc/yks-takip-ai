@@ -60,21 +60,19 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
         <div className="flex items-center gap-1 rounded-full bg-white/70 p-1 text-slate-600 shadow-inner dark:bg-slate-900/60">
           <button
             onClick={() => setTimeRange("weekly")}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              timeRange === "weekly"
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${timeRange === "weekly"
                 ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                 : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-            }`}
+              }`}
           >
             7 Gün
           </button>
           <button
             onClick={() => setTimeRange("monthly")}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              timeRange === "monthly"
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${timeRange === "monthly"
                 ? "bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                 : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-            }`}
+              }`}
           >
             30 Gün
           </button>
@@ -126,14 +124,21 @@ export function TimeSeriesCard({ entries }: TimeSeriesCardProps) {
             <Tooltip
               contentStyle={chartTooltipStyle}
               labelFormatter={(label: string) => {
-                if (!label.includes("-")) return label;
-                const [year, month, day] = label.split("-").map(Number);
-                const date = new Date(year, month - 1, day);
-                return date.toLocaleDateString("tr-TR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                });
+                try {
+                  if (!label || typeof label !== 'string' || !label.includes("-")) return label;
+                  const parts = label.split("-").map(Number);
+                  if (parts.length !== 3 || parts.some(isNaN)) return label;
+                  const [year, month, day] = parts;
+                  const date = new Date(year, month - 1, day);
+                  if (isNaN(date.getTime())) return label;
+                  return date.toLocaleDateString("tr-TR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  });
+                } catch {
+                  return label;
+                }
               }}
             />
             <Legend wrapperStyle={getChartLegendStyle()} />

@@ -10,6 +10,7 @@ module.exports = {
           100: "#e0e7ff",
           500: "#6366f1",
           700: "#4338ca",
+          900: "#312e81", // Force rebuild
         },
       },
     },

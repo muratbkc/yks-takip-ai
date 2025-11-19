@@ -125,7 +125,11 @@ const getFallbackTopic = (lesson: LessonType, seed: string) => {
 };
 
 export function DataHistoryTable() {
-  const { studyEntries, mockExams, topics } = useStudyStore();
+  const store = useStudyStore();
+  const studyEntries = Array.isArray(store.studyEntries) ? store.studyEntries : [];
+  const mockExams = Array.isArray(store.mockExams) ? store.mockExams : [];
+  const topics = Array.isArray(store.topics) ? store.topics : [];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [lessonFilter, setLessonFilter] = useState<string>("all");
@@ -174,26 +178,32 @@ export function DataHistoryTable() {
   // Filter by date range
   const filterByDate = useCallback((dateString: string) => {
     if (dateFilter === "all") return true;
-    const itemDate = new Date(dateString);
-    const today = new Date();
-    const intervalEnd = endOfDay(today);
+    try {
+      const itemDate = new Date(dateString);
+      if (isNaN(itemDate.getTime())) return false;
+      
+      const today = new Date();
+      const intervalEnd = endOfDay(today);
 
-    switch (dateFilter) {
-      case "today":
-        return isWithinInterval(itemDate, {
-          start: startOfDay(today),
-          end: intervalEnd,
-        });
-      case "week": {
-        const start = subDays(startOfDay(today), 6);
-        return isWithinInterval(itemDate, { start, end: intervalEnd });
+      switch (dateFilter) {
+        case "today":
+          return isWithinInterval(itemDate, {
+            start: startOfDay(today),
+            end: intervalEnd,
+          });
+        case "week": {
+          const start = subDays(startOfDay(today), 6);
+          return isWithinInterval(itemDate, { start, end: intervalEnd });
+        }
+        case "month": {
+          const start = subDays(startOfDay(today), 29);
+          return isWithinInterval(itemDate, { start, end: intervalEnd });
+        }
+        default:
+          return true;
       }
-      case "month": {
-        const start = subDays(startOfDay(today), 29);
-        return isWithinInterval(itemDate, { start, end: intervalEnd });
-      }
-      default:
-        return true;
+    } catch (e) {
+      return false;
     }
   }, [dateFilter]);
 
@@ -337,12 +347,18 @@ export function DataHistoryTable() {
     }>;
 
     const grouped = filteredStudyEntries.reduce<Record<string, { minutes: number; questions: number }>>((acc, entry) => {
-      const key = format(new Date(entry.date), "yyyy-MM-dd");
-      if (!acc[key]) {
-        acc[key] = { minutes: 0, questions: 0 };
+      try {
+        const date = new Date(entry.date);
+        if (isNaN(date.getTime())) return acc;
+        const key = format(date, "yyyy-MM-dd");
+        if (!acc[key]) {
+          acc[key] = { minutes: 0, questions: 0 };
+        }
+        acc[key].minutes += entry.minutes;
+        acc[key].questions += entry.questionCount || 0;
+      } catch (e) {
+        // Skip invalid dates
       }
-      acc[key].minutes += entry.minutes;
-      acc[key].questions += entry.questionCount || 0;
       return acc;
     }, {});
 
@@ -469,10 +485,19 @@ export function DataHistoryTable() {
 
     const trend = sortedByDate
       .slice(0, 6)
-      .map((exam) => ({
-        label: format(new Date(exam.date), "dd MMM", { locale: tr }),
-        net: Number(exam.summary.reduce((sum, item) => sum + item.net, 0).toFixed(1)),
-      }))
+      .map((exam) => {
+        try {
+          const date = new Date(exam.date);
+          if (isNaN(date.getTime())) return null;
+          return {
+            label: format(date, "dd MMM", { locale: tr }),
+            net: Number(exam.summary.reduce((sum, item) => sum + item.net, 0).toFixed(1)),
+          };
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(Boolean)
       .reverse();
 
     const typeStats = {
@@ -839,9 +864,17 @@ export function DataHistoryTable() {
                 {examHighlights.latest?.title || "Deneme kaydı yok"}
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {examHighlights.latest
-                  ? format(new Date(examHighlights.latest.date), "dd MMM yyyy", { locale: tr })
-                  : "Hazır olduğunuzda ilk denemenizi ekleyin"}
+                {(() => {
+                  try {
+                    if (examHighlights.latest) {
+                      const d = new Date(examHighlights.latest.date);
+                      if (!isNaN(d.getTime())) {
+                        return format(d, "dd MMM yyyy", { locale: tr });
+                      }
+                    }
+                  } catch {}
+                  return "Hazır olduğunuzda ilk denemenizi ekleyin";
+                })()}
               </p>
             </div>
             {examHighlights.latest && (
@@ -924,7 +957,15 @@ export function DataHistoryTable() {
               </h3>
               {examHighlights.bestExam && (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {format(new Date(examHighlights.bestExam.date), "dd MMM yyyy", { locale: tr })} • {examHighlights.bestExam.examType}
+                  {(() => {
+                    try {
+                      const d = new Date(examHighlights.bestExam.date);
+                      if (!isNaN(d.getTime())) {
+                        return format(d, "dd MMM yyyy", { locale: tr });
+                      }
+                    } catch {}
+                    return "";
+                  })()} • {examHighlights.bestExam.examType}
                 </p>
               )}
             </div>
@@ -1067,12 +1108,23 @@ export function DataHistoryTable() {
                 ) : (
                   paginatedStudyEntries.map((entry) => {
                     const isExpanded = expandedRow === entry.id;
+                    let formattedDate = "";
+                    try {
+                      const date = new Date(entry.date);
+                      if (!isNaN(date.getTime())) {
+                        formattedDate = format(date, "dd MMM yyyy", { locale: tr });
+                      } else {
+                        formattedDate = "Geçersiz Tarih";
+                      }
+                    } catch (e) {
+                      formattedDate = "Hata";
+                    }
                     
                     return (
                       <Fragment key={entry.id}>
                         <TableRow className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
                           <TableCell className="font-medium">
-                            {format(new Date(entry.date), "dd MMM yyyy", { locale: tr })}
+                            {formattedDate}
                           </TableCell>
                           <TableCell className="font-semibold text-indigo-600 dark:text-indigo-400">
                             {entry.lesson}
@@ -1202,14 +1254,21 @@ export function DataHistoryTable() {
               </div>
               <button
                 onClick={() => exportToCSV(
-                  filteredStudyEntries.map(e => ({
-                    Tarih: format(new Date(e.date), "dd/MM/yyyy"),
-                    Ders: e.lesson,
-                    "Çalışma Türü": e.studyType,
-                    "Süre (dk)": e.minutes,
-                    Soru: e.questionCount || 0,
-                    "Zaman Dilimi": e.timeSlot || "-"
-                  })),
+                  filteredStudyEntries.map(e => {
+                    let dateStr = "";
+                    try {
+                      const d = new Date(e.date);
+                      if (!isNaN(d.getTime())) dateStr = format(d, "dd/MM/yyyy");
+                    } catch {}
+                    return {
+                      Tarih: dateStr,
+                      Ders: e.lesson,
+                      "Çalışma Türü": e.studyType,
+                      "Süre (dk)": e.minutes,
+                      Soru: e.questionCount || 0,
+                      "Zaman Dilimi": e.timeSlot || "-"
+                    };
+                  }),
                   "calisma-kayitlari.csv"
                 )}
                 className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
@@ -1291,12 +1350,23 @@ export function DataHistoryTable() {
                   paginatedMockExams.map((exam) => {
                     const totalNet = exam.summary.reduce((sum, item) => sum + item.net, 0);
                     const isExpanded = expandedRow === exam.id;
+                    let formattedDate = "";
+                    try {
+                      const date = new Date(exam.date);
+                      if (!isNaN(date.getTime())) {
+                        formattedDate = format(date, "dd MMM yyyy", { locale: tr });
+                      } else {
+                        formattedDate = "Geçersiz Tarih";
+                      }
+                    } catch (e) {
+                      formattedDate = "Hata";
+                    }
                     
                     return (
                       <Fragment key={exam.id}>
                         <TableRow className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
                           <TableCell className="font-medium">
-                            {format(new Date(exam.date), "dd MMM yyyy", { locale: tr })}
+                            {formattedDate}
                           </TableCell>
                           <TableCell className="font-semibold max-w-xs">
                             {exam.title}
@@ -1426,14 +1496,21 @@ export function DataHistoryTable() {
               </div>
               <button
                 onClick={() => exportToCSV(
-                  filteredMockExams.map(e => ({
-                    Tarih: format(new Date(e.date), "dd/MM/yyyy"),
-                    Başlık: e.title,
-                    Tür: e.examType,
-                    Süre: e.duration,
-                    "Toplam Net": e.summary.reduce((sum, item) => sum + item.net, 0).toFixed(1),
-                    Zorluk: e.difficulty
-                  })),
+                  filteredMockExams.map(e => {
+                    let dateStr = "";
+                    try {
+                      const d = new Date(e.date);
+                      if (!isNaN(d.getTime())) dateStr = format(d, "dd/MM/yyyy");
+                    } catch {}
+                    return {
+                      Tarih: dateStr,
+                      Başlık: e.title,
+                      Tür: e.examType,
+                      Süre: e.duration,
+                      "Toplam Net": e.summary.reduce((sum, item) => sum + item.net, 0).toFixed(1),
+                      Zorluk: e.difficulty
+                    };
+                  }),
                   "deneme-kayitlari.csv"
                 )}
                 className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"

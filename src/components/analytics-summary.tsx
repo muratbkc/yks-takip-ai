@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useStudyStore } from "@/store/use-study-store";
+import { useStore } from "@/hooks/use-store";
 import { sumBy } from "@/lib/math";
 import { formatMinutes } from "@/lib/utils";
 import {
@@ -39,8 +40,8 @@ const cards = [
 ];
 
 export function AnalyticsSummary() {
-  const studyEntries = useStudyStore((state) => state.studyEntries);
-  const mockExams = useStudyStore((state) => state.mockExams);
+  const studyEntries = useStore(useStudyStore, (state) => state.studyEntries) ?? [];
+  const mockExams = useStore(useStudyStore, (state) => state.mockExams) ?? [];
 
   const stats = useMemo(() => {
     const minutes = sumBy(studyEntries, (entry) => entry.minutes);

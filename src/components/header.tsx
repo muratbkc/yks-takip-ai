@@ -15,8 +15,11 @@ export function Header() {
           <p className="text-xs uppercase tracking-wide text-slate-500">
             YKS Takip AI
           </p>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+          <h1 className="hidden text-2xl font-semibold text-slate-900 dark:text-white sm:block">
             TYT–AYT hazırlığını görünür kıl
+          </h1>
+          <h1 className="block text-xl font-semibold text-slate-900 dark:text-white sm:hidden">
+            Hazırlığını Yönet
           </h1>
         </div>
       </div>

@@ -1,5 +1,8 @@
-export function cn(...classes: Array<string | undefined | false | null>) {
-  return classes.filter(Boolean).join(" ");
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
 
 export const formatMinutes = (totalMinutes: number) => {
@@ -12,11 +15,19 @@ export const formatMinutes = (totalMinutes: number) => {
 };
 
 export const formatDate = (date: string | Date) => {
-  const value = typeof date === "string" ? new Date(date) : date;
-  return value.toLocaleDateString("tr-TR", {
-    day: "2-digit",
-    month: "short",
-  });
+  try {
+    const value = typeof date === "string" ? new Date(date) : date;
+    // Geçersiz tarih kontrolü
+    if (isNaN(value.getTime())) {
+      return "";
+    }
+    return new Intl.DateTimeFormat("tr-TR", {
+      day: "2-digit",
+      month: "short",
+    }).format(value);
+  } catch (e) {
+    return "";
+  }
 };
 
 /**

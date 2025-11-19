@@ -12,6 +12,7 @@ import {
   getDefaultLessonForField,
   getLessonGroupsForField,
 } from "@/lib/lesson-catalog";
+import { generateSafeId } from "@/lib/safe-random-id";
 
 const difficultyLabels: Record<Difficulty, string> = {
   kolay: "Kolay",
@@ -45,11 +46,6 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-
-const createId = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2);
 
 interface MockExamFormProps {
   onSwitchToDailyLog: () => void;
@@ -132,7 +128,7 @@ export function MockExamForm({ onSwitchToDailyLog }: MockExamFormProps) {
       empty: 0,
     }));
     addMockExam({
-      id: createId(),
+      id: generateSafeId(),
       ...data,
       summary,
     });

@@ -2,6 +2,7 @@
 
 import { usePomodoro } from "@/hooks/use-pomodoro";
 import { useStudyStore } from "@/store/use-study-store";
+import { generateSafeId } from "@/lib/safe-random-id";
 import { Clock, PauseCircle, PlayCircle, RotateCcw } from "lucide-react";
 
 export function PomodoroTimer() {
@@ -13,7 +14,7 @@ export function PomodoroTimer() {
     if (!isRunning && !isBreak) {
       // Otomatik süre kaydı
       addStudyEntry({
-        id: crypto.randomUUID(),
+        id: generateSafeId(),
         date: new Date().toISOString().split("T")[0],
         lesson: "Matematik",
         minutes: 25,

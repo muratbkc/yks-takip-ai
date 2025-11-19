@@ -176,7 +176,7 @@ function WidgetFrame({
 }
 
 export function WidgetBoard({ entries, exams }: WidgetBoardProps) {
-  const widgets = useStudyStore((state) => state.widgets);
+  const widgets = useStudyStore((state) => Array.isArray(state.widgets) ? state.widgets : []);
   const reorderWidgets = useStudyStore((state) => state.reorderWidgets);
   const updateWidgetSize = useStudyStore((state) => state.updateWidgetSize);
   const [isMounted, setIsMounted] = useState(false);
@@ -188,9 +188,14 @@ export function WidgetBoard({ entries, exams }: WidgetBoardProps) {
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
-      activationConstraint: { distance: 5 },
+      activationConstraint: { distance: 10 },
     }),
-    useSensor(TouchSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
   );
 
   const components = useMemo(
@@ -208,7 +213,7 @@ export function WidgetBoard({ entries, exams }: WidgetBoardProps) {
   ): ReactNode => (
     <div
       key={`board-${boardIndex}`}
-      className="relative overflow-hidden rounded-[28px] border-8 border-amber-900 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 px-6 py-6 shadow-[0_25px_60px_rgba(6,15,9,0.6)]"
+      className="relative overflow-hidden rounded-[28px] border-8 border-amber-900 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 p-4 shadow-[0_25px_60px_rgba(6,15,9,0.6)] sm:p-6"
     >
       <div className="pointer-events-none absolute inset-0 rounded-[20px] border border-white/10 opacity-60" />
       <div className="pointer-events-none absolute inset-0 rounded-[20px] bg-[repeating-linear-gradient(0deg,transparent,transparent_48px,rgba(255,255,255,0.04)_50px)]" />

@@ -6,7 +6,8 @@ import { useStudyStore } from "@/store/use-study-store";
 import { useEffect } from "react";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setUserId, initializeFromSupabase } = useStudyStore();
+  const setUserId = useStudyStore((state) => state.setUserId);
+  const initializeFromSupabase = useStudyStore((state) => state.initializeFromSupabase);
 
   useEffect(() => {
     const supabase = createClient();

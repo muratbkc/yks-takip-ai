@@ -8,6 +8,7 @@ import {
   initialTopicProgress,
   initialWidgets,
 } from "@/lib/sample-data";
+import { safeStorage } from "@/lib/safe-storage";
 import { createClient } from "@/lib/supabase/client";
 import type {
   Goal,
@@ -41,7 +42,7 @@ export interface StudyState {
   isInitialized: boolean;
   userId: string | null;
   profile: StudentProfile | null;
-  
+
   // Actions
   setUserId: (userId: string | null) => void;
   fetchProfile: () => Promise<void>;
@@ -149,7 +150,7 @@ export const useStudyStore = create<StudyState>()(
           set({ isInitialized: true });
           return;
         }
-        
+
         if (isInitialized) {
           console.log('Zaten initialize edilmiş');
           return;
@@ -159,7 +160,7 @@ export const useStudyStore = create<StudyState>()(
 
         try {
           console.log('Supabase verileri çekiliyor...');
-          
+
           // Tüm verileri paralel olarak çek
           const [
             { data: studyEntries, error: entriesError },
@@ -196,7 +197,7 @@ export const useStudyStore = create<StudyState>()(
               .eq("id", userId)
               .maybeSingle(),
           ]);
-          
+
           // Hataları logla ama devam et
           if (entriesError) console.error('Study entries hatası:', entriesError);
           if (examsError) console.error('Mock exams hatası:', examsError);
@@ -343,12 +344,12 @@ export const useStudyStore = create<StudyState>()(
             profile: profileRow ? mapProfileRow(profileRow) : null,
             isInitialized: true,
           });
-          
+
           console.log('✅ Supabase verileri başarıyla yüklendi');
         } catch (error) {
           console.error("❌ Supabase'den veri çekilemedi:", error);
           // Hata olsa bile default değerlerle devam et
-          set({ 
+          set({
             studyEntries: [],
             mockExams: [],
             goals: [],
@@ -356,7 +357,7 @@ export const useStudyStore = create<StudyState>()(
             notifications: [],
             widgets: initialWidgets,
             profile: null,
-            isInitialized: true 
+            isInitialized: true
           });
         }
       },
@@ -366,7 +367,7 @@ export const useStudyStore = create<StudyState>()(
         if (!userId) return;
 
         const supabase = createClient();
-        
+
         const { error } = await supabase.from("study_entries").insert({
           user_id: userId,
           date: entry.date,
@@ -417,8 +418,8 @@ export const useStudyStore = create<StudyState>()(
 
         // 2. Her bir ders sonucunu 'mock_exam_details' tablosuna ekle
         const summaryWithExamId = exam.summary.map(detail => ({
-            exam_id: newExam.id,
-            ...detail
+          exam_id: newExam.id,
+          ...detail
         }));
 
         const { error: detailsError } = await supabase
@@ -444,7 +445,7 @@ export const useStudyStore = create<StudyState>()(
         if (!userId) return;
 
         const supabase = createClient();
-        
+
         const { error } = await supabase
           .from("goals")
           .update({ current })
@@ -494,7 +495,7 @@ export const useStudyStore = create<StudyState>()(
         if (!userId) return;
 
         const supabase = createClient();
-        
+
         const { error } = await supabase
           .from("notifications")
           .update({ read: true })
@@ -515,7 +516,7 @@ export const useStudyStore = create<StudyState>()(
         if (!userId) return;
 
         const supabase = createClient();
-        
+
         const { error } = await supabase
           .from("topic_progress")
           .upsert({
@@ -561,7 +562,7 @@ export const useStudyStore = create<StudyState>()(
     }),
     {
       name: "yks-tracker-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeStorage),
       partialize: (state) => ({
         studyEntries: state.studyEntries,
         mockExams: state.mockExams,
@@ -571,6 +572,18 @@ export const useStudyStore = create<StudyState>()(
         profile: state.profile,
         userId: state.userId,
       }),
+      merge: (persistedState: any, currentState) => {
+        return {
+          ...currentState,
+          ...persistedState,
+          studyEntries: Array.isArray(persistedState?.studyEntries) ? persistedState.studyEntries : currentState.studyEntries,
+          mockExams: Array.isArray(persistedState?.mockExams) ? persistedState.mockExams : currentState.mockExams,
+          goals: Array.isArray(persistedState?.goals) ? persistedState.goals : currentState.goals,
+          topics: Array.isArray(persistedState?.topics) ? persistedState.topics : currentState.topics,
+          notifications: Array.isArray(persistedState?.notifications) ? persistedState.notifications : currentState.notifications,
+          widgets: Array.isArray(persistedState?.widgets) ? persistedState.widgets : currentState.widgets,
+        };
+      },
     }
   )
 );
